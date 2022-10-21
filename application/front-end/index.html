@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Central Heating</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Central Heating</h1>
+    <div id="buttons"></div>
+    <div class="output" id="output"></div>
+    <button onclick="onClick()" id="program" disabled>DISABLE</button>
+    <form id="periodsForm">
+      <label id="periods_label"><input id="new_periods"><div><span>update periods</span><span class="period-helper"><br>[[startHour, endHour, targetTemp], ...]</span></div></label>
+    </form>
+    <script src="index.js"></script>
+  </body>
+</html>

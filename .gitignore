@@ -1,0 +1,7 @@
+/.idea/
+/application/front-end/node_modules/
+/application/__pycache__/
+/data/persistence.json
+/data/__pycache__/
+heating_v3.log*
+

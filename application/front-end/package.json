@@ -1,0 +1,10 @@
+{
+  "name": "open-heating",
+  "description": "Open Central Heating API",
+  "version": "0.3.0",
+  "dependencies": {},
+  "devDependencies": {
+    "prettier": "^2.7.1",
+    "eslint": "^8.25.0"
+  }
+}
