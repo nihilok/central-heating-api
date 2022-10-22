@@ -145,16 +145,21 @@ class System(BaseModel):
 
     @log_exceptions
     def add_period(self, period: Period):
+      uodated = False
         for p in self.periods:
             if p.start == period.start and p.end == period.end:
-                raise Exception("Period exists")
+                p.target = period.target
+                updated = True
+                break
             if p.start >= period.end:
                 continue
             if p.end <= period.start:
                 continue
             raise Exception("Periods overlap")
-        self.periods.append(period)
+        if not updated:
+          self.periods.append(period)
         self.periods.sort(key=lambda x: x.start)
+        self.serialize()
 
     @log_exceptions
     @use_file_lock
