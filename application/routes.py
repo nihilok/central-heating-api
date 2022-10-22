@@ -100,7 +100,9 @@ def get_system_by_id(system_id):
 async def target(system_id: Union[int, str], body: PeriodsBody):
     try:
         system = get_system_by_id(system_id)
-        system.periods = body.periods
+        for p in body.periods:
+          period = Period(start=p[0], end=p[1], target=p[2])
+          system.add_period(period)
         system.serialize()
         system = get_system_by_id(system_id)
         return SystemOut(**system.dict(exclude_unset=True))
