@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from application.constants import DEFAULT_MINIMUM_TARGET
 from application.logs import log_exceptions
 
+DEFAULT_ROOM_TEMP = 22
+
 PERSISTENCE_FILE = Path(os.path.dirname(os.path.abspath(__file__))) / "persistence.json"
 file_lock = False
 
@@ -109,6 +111,7 @@ class System(BaseModel):
     system_id: Union[int, str]
     program: bool = False
     periods: list[Period] = []
+    advance: Optional[float] = None
 
     @property
     def temperature(self):
@@ -118,12 +121,22 @@ class System(BaseModel):
     def relay_on(self):
         return self.relay.status()
 
-    @property
-    def current_target(self):
+    @staticmethod
+    def _decimal_time():
         current_time = datetime.now()
         current_hour = current_time.hour
         current_minute_decimal = current_time.minute / 60
         check_time = current_hour + current_minute_decimal
+        return check_time
+
+    @property
+    def current_target(self):
+        if not self.program:
+            if self.advance:
+                return self.next_target
+            return DEFAULT_MINIMUM_TARGET
+
+        check_time = self._decimal_time()
         try:
             period = next(
                 filter(
@@ -133,6 +146,20 @@ class System(BaseModel):
             )
         except StopIteration:
             return DEFAULT_MINIMUM_TARGET
+        return period.target
+
+    @property
+    def next_target(self):
+        check_time = self._decimal_time()
+        try:
+            period = next(
+                filter(
+                    lambda x: x.end > check_time,
+                    sorted(self.periods, key=lambda p: p.end),
+                )
+            )
+        except StopIteration:
+            return DEFAULT_ROOM_TEMP
         return period.target
 
     @log_exceptions
@@ -145,24 +172,43 @@ class System(BaseModel):
 
     @log_exceptions
     def add_period(self, period: Period):
-      uodated = False
+        update = None
+        if period in self.periods:
+            return
+
         for p in self.periods:
-            if p.start == period.start and p.end == period.end:
-                p.target = period.target
-                updated = True
+            # Same period
+            if p.start == period.start or p.end == period.end:
+                update = p
                 break
-            if p.start >= period.end:
-                continue
-            if p.end <= period.start:
-                continue
-            raise Exception("Periods overlap")
-        if not updated:
-          self.periods.append(period)
+
+            # Overlapping period
+            elif (p.start < period.end) and (p.end > period.start):
+                return
+        if update:
+            self.periods = list(
+                filter(
+                    lambda x: x.start != update.start and x.end != update.end,
+                    self.periods,
+                )
+            )
+
+        self.periods.append(period)
         self.periods.sort(key=lambda x: x.start)
         self.serialize()
 
-    @log_exceptions
+    def check_periods(self, periods_in):
+        if (add_remove := len(periods_in) - len(self.periods)) == 0:
+            return
+        p1 = set(self.periods)
+        p2 = set(periods_in)
+        if add_remove > 0:
+            self.periods.extend(p1.difference(p2))
+        else:
+            self.periods = periods_in
+
     @use_file_lock
+    @log_exceptions
     def serialize(self):
         sensor_dict = self.sensor.dict(exclude_unset=True)
         relay_dict = self.relay.dict(exclude_unset=True)
@@ -172,6 +218,7 @@ class System(BaseModel):
             "system_id": self.system_id,
             "program": self.program,
             "periods": json.dumps(self.periods),
+            "advance": self.advance,
         }
 
         if not os.path.exists(PERSISTENCE_FILE):
@@ -193,15 +240,19 @@ class System(BaseModel):
             json.dump(current, f, indent=2)
 
     @classmethod
-    @log_exceptions
     @use_file_lock
+    @log_exceptions
     def deserialize_systems(cls) -> list["System"]:
-        with open(PERSISTENCE_FILE, "r") as f:
-            current = json.load(f)
+        try:
+            with open(PERSISTENCE_FILE, "r") as f:
+                current = json.load(f)
+        except FileNotFoundError:
+            return []
         systems_in_memory = []
         for system in current["systems"]:
             relay = RelayNode(**system["relay"])
             sensor = SensorNode(**system["sensor"])
+            advance = system.get("advance")
             system = System(
                 relay=relay,
                 sensor=sensor,
@@ -210,6 +261,7 @@ class System(BaseModel):
                 periods=[
                     Period(p[0], p[1], p[2]) for p in json.loads(system["periods"])
                 ],
+                advance=advance,
             )
             systems_in_memory.append(system)
         return systems_in_memory

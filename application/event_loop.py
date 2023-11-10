@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Callable
 
 from data.models import System
@@ -18,12 +19,40 @@ async def run_check(system: System):
     logger.debug(f"Running temperature check ({system.system_id})")
     temperature, target = system.temperature, system.current_target
     logger.debug(f"{temperature=} {target=}")
+
+    relay_state = system.relay_on
+
+    if temperature is None:
+        return False
+
+    current_time = time.time()
+
+    logger.debug(f"{current_time=} - {system.advance=} - {system.next_target=}")
+    logger.debug(f"time: {system.advance and system.advance > current_time}")
+    logger.debug(f"temp: {temperature < system.next_target}")
+
     if (
-        system.program is True
-        and temperature is not None
-        and temperature < target - THERMOSTAT_THRESHOLD
+        system.advance
+        and system.advance > current_time
+        and temperature < system.next_target
     ):
+        logger.debug("ADVANCE ON!")
         return True
+    elif system.advance and system.advance <= current_time:
+        system.advance = None
+        system.serialize()
+
+    if not system.program:
+        return False
+
+    if relay_state:
+        if temperature >= target:
+            return False
+        return True
+    else:
+        if temperature <= target - THERMOSTAT_THRESHOLD:
+            return True
+        return False
 
 
 async def event_loop(

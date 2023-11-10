@@ -11,7 +11,7 @@ html {
 
 @media (max-width: 480px) {
   html {
-    padding: 2rem 0.25rem 0.25rem;
+    padding: 1rem;
   }
 }
 
@@ -47,7 +47,11 @@ button {
   border-radius: 3px;
 }
 
-button + button {
+button:disabled {
+  color: dimgrey;
+}
+
+button + button:not(#advance) {
   margin-left: 1rem;
 }
 
@@ -58,4 +62,8 @@ button + button {
 
 #periods_label {
   display: flex;
+}
+
+#buttons {
+  display: none;
 }

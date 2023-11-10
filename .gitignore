@@ -1,7 +1,10 @@
-/.idea/
+*/__pycache__/
+persistence.json
 /application/front-end/node_modules/
-/application/__pycache__/
-/data/persistence.json
-/data/__pycache__/
-heating_v3.log*
-
+/application/front-end/package-lock.json
+heating_v3.log.1
+heating_v3.log.2
+heating_v3.log.3
+heating_v3.log
+/authentication/users.sqlite3
+.idea/

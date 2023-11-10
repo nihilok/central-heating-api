@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 
@@ -12,7 +13,7 @@ fileHandler.setFormatter(formatter)
 
 def get_logger(name=__name__):
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.INFO if not os.getenv("DEBUG_HEATING") else logging.DEBUG)
     logger.addHandler(fileHandler)
     logger.addHandler(streamHandler)
     return logger
