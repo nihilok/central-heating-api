@@ -55,21 +55,27 @@ async def run_check(system: System):
         return False
 
 
+@log_exceptions
+async def loop_systems():
+    for system in System.deserialize_systems():
+        yield system
+
+
 async def event_loop(
     run_condition: Callable[[], bool],
     interval=CHECK_FREQUENCY_SECONDS,
 ):
     while run_condition():
-        try:
-            for system in System.deserialize_systems():
+        async for system in loop_systems():
+            try:
                 if await run_check(system) is True:
                     system.switch_on()
                 else:
                     system.switch_off()
-            await asyncio.sleep(interval)
-        except Exception as e:
-            logger.error(f"{e.__class__.__name__}: {e}")
-            continue
+            except Exception as e:
+                logger.error(f"ERROR in system '{system.system_id}': {e.__class__.__name__}: {e}")
+
+        await asyncio.sleep(interval)
 
 
 @log_exceptions
