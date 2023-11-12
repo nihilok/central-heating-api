@@ -242,13 +242,12 @@ class System(BaseModel):
     @classmethod
     @use_file_lock
     @log_exceptions
-    def deserialize_systems(cls) -> list["System"]:
+    def deserialize_systems(cls) -> Iterable["System"]:
         try:
             with open(PERSISTENCE_FILE, "r") as f:
                 current = json.load(f)
         except FileNotFoundError:
             return []
-        systems_in_memory = []
         for system in current["systems"]:
             relay = RelayNode(**system["relay"])
             sensor = SensorNode(**system["sensor"])
@@ -263,13 +262,11 @@ class System(BaseModel):
                 ],
                 advance=advance,
             )
-            systems_in_memory.append(system)
-        return systems_in_memory
+            yield system
 
     @classmethod
     @log_exceptions
     def get_by_id(cls, system_id):
-        systems = cls.deserialize_systems()
-        for system in systems:
+        for system in cls.deserialize_systems():
             if system.system_id == system_id:
                 return system

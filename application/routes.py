@@ -17,10 +17,10 @@ logger = get_logger(__name__)
 
 @router.get("/systems/")
 async def get_systems(system_id: Optional[str] = None):
-    ss = System.deserialize_systems()
+    systems = System.deserialize_systems()
     if system_id is None:
-        return [SystemOut(**s.dict(exclude_unset=True)) for s in ss]
-    for system in ss:
+        return [SystemOut(**s.dict(exclude_unset=True)) for s in systems]
+    for system in systems:
         if system.system_id == system_id:
             return SystemOut(**system.dict())
 
