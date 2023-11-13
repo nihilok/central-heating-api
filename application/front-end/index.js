@@ -1,25 +1,22 @@
 /*jshint esversion: 6 */
-
-const button = document.querySelector("#program");
-const advanceButton = document.querySelector("#advance");
-const div = document.querySelector("#output");
-const periodsForm = document.querySelector("#periodsForm");
-const periodsInput = document.querySelector("#new_periods");
-const loginForm = document.querySelector("#loginForm");
-const passwordInput = document.querySelector("#password");
-const buttons = document.querySelector("#buttons");
-const readout = document.querySelector("#readout");
-const currentHeading = document.querySelector("#current-system");
-const temperatureMap = {};
-const INTERVAL_UPDATE = 5000;
-const DEFAULT_USERNAME = "username"; // TODO: for sake of ease just hardcoded a username
-
+let button;
+let advanceButton;
+let outputDiv;
+let periodsForm;
+let periodsInput;
+let loginForm;
+let usernameInput;
+let passwordInput;
+let buttons;
+let readout;
+let currentHeading;
+let temperatureMap = {};
+let INTERVAL_UPDATE = 5000;
 let system_data;
 let allSystems;
 let interval;
 let programOutput = "";
 let temperatureOutput = "";
-let currentTemperature;
 let currentTarget;
 let relayOn;
 let t;
@@ -85,7 +82,9 @@ function toggleUIElements() {
     buttons.style.display = "none";
     button.style.display = "none";
     advanceButton.style.display = "none";
+    outputDiv.style.display = "none";
     currentHeading.innerText = "";
+    loginForm.style.display = "block"; // Show login form when not logged in
     return;
   }
   loginForm.style.display = "none";
@@ -110,6 +109,7 @@ function toggleUIElements() {
   currentHeading.innerText =
     system_data.system_id.substring(0, 1).toUpperCase() +
     system_data.system_id.substring(1);
+  outputDiv.style.display = "block";
   if (!system_data?.program) {
     periodsForm.style.display = "none";
   } else {
@@ -152,7 +152,7 @@ function setSystem(system_id) {
         periodHelper;
     }
   }
-  div.innerHTML = `${programOutput}${temperatureOutput}`;
+  outputDiv.innerHTML = `${programOutput}${temperatureOutput}`;
   setTemperatureOutput();
 }
 
@@ -163,12 +163,12 @@ function updatePeriod(event) {
     return;
   }
   const method = "POST";
-  const body = JSON.stringify({ periods: JSON.parse(periodsInput.value) });
+  const body = JSON.stringify({periods: JSON.parse(periodsInput.value)});
   const headers = new Headers({
     "Content-Type": "application/json",
     Authorization: `${t.token_type} ${t.access_token}`,
   });
-  fetch(`/api/v3/periods/${systemId}/`, { method, headers, body }).then(
+  fetch(`/api/v3/periods/${systemId}/`, {method, headers, body}).then(
     function (response) {
       if (response.status !== 200) {
         localStorage.clear();
@@ -194,12 +194,12 @@ function triggerAdvance() {
     return;
   }
   const method = "POST";
-  const body = JSON.stringify({ end_time: Date.now() / 1000 + 60 * 60 });
+  const body = JSON.stringify({end_time: Date.now() / 1000 + 60 * 60});
   const headers = new Headers({
     "Content-Type": "application/json",
     Authorization: `${t.token_type} ${t.access_token}`,
   });
-  fetch(`/api/v3/advance/${systemId}/`, { method, headers, body }).then(
+  fetch(`/api/v3/advance/${systemId}/`, {method, headers, body}).then(
     function (response) {
       if (response.status !== 200) {
         localStorage.clear();
@@ -249,19 +249,11 @@ function setTemperatureOutput() {
   )}˚C ${!!currentTarget || relayOn ? "/" : ""} ${currentTarget || ""} ${
     relayOn ? "🔥" : ""
   }`;
-  div.innerHTML = `${programOutput}${temperatureOutput}`;
+  outputDiv.innerHTML = `${programOutput}${temperatureOutput}`;
 }
 
 function update(system) {
-  updateTemperatureMap().then(() => {
-    setReadout().then(() => {
-      getTargetInfo(system).then((data) => {
-        currentTarget = data.current_target;
-        relayOn = data.relay_on;
-        setTemperatureOutput();
-      });
-    });
-  });
+  updateWrapper(system)
 }
 
 function onClick() {
@@ -311,7 +303,7 @@ function idClickHandler(event, s) {
 function login(e) {
   e.preventDefault();
   const formData = new FormData();
-  formData.set("username", DEFAULT_USERNAME);
+  formData.set("username", usernameInput.value);
   formData.set("password", passwordInput.value);
 
   fetch("/token/", {
@@ -346,23 +338,59 @@ function sortData(data) {
   });
 }
 
+function updateWrapper(system) {
+  updateTemperatureMap()
+    .then(setReadout)
+    .then(() => getTargetInfo(system))
+    .then(data => {
+      currentTarget = data.current_target;
+      relayOn = data.relay_on;
+      setTemperatureOutput();
+    });
+}
+
+function getAndSetSystem(systemId) {
+  getSystems().then(data => {
+    allSystems = data;
+    setSystem(systemId);
+  });
+  updateInterval();
+  resetInterval();
+}
+
+function createSystemButtons(allSystems) {
+  for (const s of allSystems) {
+    const button = document.createElement("button");
+    button.innerHTML = s.system_id;
+    button.addEventListener("click", (event) => idClickHandler(event, s));
+    buttons.appendChild(button);
+    buttons.style.display = "none";
+  }
+}
+
 window.onload = () => {
-  interval = setInterval(updateInterval, INTERVAL_UPDATE);
-  periodsForm.addEventListener("submit", updatePeriod);
-  loginForm.addEventListener("submit", login);
-  periodsInput.disabled = !system_data;
+  button = document.querySelector("#program");
+  advanceButton = document.querySelector("#advance");
+  outputDiv = document.querySelector("#output");
+  periodsForm = document.querySelector("#periodsForm");
+  periodsInput = document.querySelector("#new_periods");
+  loginForm = document.querySelector("#loginForm");
+  usernameInput = document.querySelector("#username");
+  passwordInput = document.querySelector("#password");
+  buttons = document.querySelector("#buttons");
+  readout = document.querySelector("#readout");
+  currentHeading = document.querySelector("#current-system");
   t = JSON.parse(localStorage.getItem("t") ?? "null");
   toggleUIElements();
-  getSystems()
-    .then((data) => (allSystems = data))
-    .then(() => {
-      for (const s of allSystems) {
-        const button = document.createElement("button");
-        button.innerHTML = s.system_id;
-        button.addEventListener("click", (event) => idClickHandler(event, s));
-        buttons.appendChild(button);
-        buttons.style.display = "none";
-      }
-      setReadout().then(() => toggleUIElements());
-    });
+  loginForm.addEventListener("submit", login)
+  button.addEventListener("click", () => getAndSetSystem(system_data.system_id));
+
+  getSystems().then(data => {
+    allSystems = data;
+    createSystemButtons(allSystems);
+    setReadout().then(() => toggleUIElements());
+  });
 };
+
+updateInterval();
+resetInterval();

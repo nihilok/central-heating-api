@@ -10,17 +10,17 @@
 <body>
 <h1>Central Heating</h1>
 <div id="readout"></div>
-<div id="buttons"></div>
-<h3 id="current-system"></h3>
-<div class="output" id="output"></div>
-<button onclick="onClick()" id="program" disabled style="display: none">DISABLE</button><button id="advance" onclick="triggerAdvance()">ADVANCE (1h)</button>
-<form id="periodsForm">
+<div id="buttons" style="display: none;"></div>
+<h3 id="current-system" style="display: none;"></h3>
+<div class="output" id="output" style="display: none;"></div>
+<button onclick="onClick()" id="program" disabled style="display: none">DISABLE</button><button id="advance" onclick="triggerAdvance()" style="display: none;">ADVANCE (1h)</button>
+<form id="periodsForm" style="display: none;">
     <label id="periods_label"><input id="new_periods">
         <div><span>update periods</span><span class="period-helper"><br>[[startHour, endHour, targetTemp], ...]</span>
         </div>
     </label>
 </form>
-<form id="loginForm">
+<form id="loginForm" style="display: none;">
     <br>
     <br>
     <br>
@@ -29,8 +29,8 @@
     <label>
         <b>LOGIN: </b>
     </label>
-    <input type="text" id="username" autocomplete="username" style="display: none">
-    <input type="password" id="password" autocomplete="new-password">
+    <input type="text" id="username" autocomplete="username" placeholder="Username" required>
+    <input type="password" id="password" autocomplete="new-password" placeholder="Password" required>
     <input type="submit" style="display: none">
 </form>
 <script src="index.js"></script>

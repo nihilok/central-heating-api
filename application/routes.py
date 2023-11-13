@@ -29,6 +29,7 @@ def get_system_by_id_or_404(system_id):
     system = System.get_by_id(system_id)
     if not system:
         raise HTTPException(404, "System not found")
+    return system
 
 
 @router.post("/systems/", dependencies=[Depends(get_current_user)])
@@ -52,14 +53,13 @@ async def new_or_update_system(system_update: SystemUpdate):
 
 @router.get("/temperature/{system_id}/")
 async def temperature(system_id: Union[int, str]):
-    system = get_system_by_id_or_404(system_update.system_id)
+    system = get_system_by_id_or_404(system_id)
     return {"temperature": system.temperature}
-
 
 
 @router.get("/target/{system_id}/")
 async def target(system_id: Union[int, str]):
-    system = get_system_by_id_or_404(system_update.system_id)
+    system = get_system_by_id_or_404(system_id)
     return {
         "current_target": system.current_target
         if not system.advance
@@ -70,7 +70,7 @@ async def target(system_id: Union[int, str]):
 
 @router.post("/periods/{system_id}/", dependencies=[Depends(get_current_user)])
 async def target(system_id: Union[int, str], body: PeriodsBody):
-    system = get_system_by_id_or_404(system_update.system_id)
+    system = get_system_by_id_or_404(system_id)
     p_in = [Period(*p) for p in body.periods]
     if len(p_in) < len(system.periods):
         system.periods = []
@@ -81,11 +81,10 @@ async def target(system_id: Union[int, str], body: PeriodsBody):
 
 @router.post("/advance/{system_id}/", dependencies=[Depends(get_current_user)])
 async def target(system_id: Union[int, str], body: AdvanceBody):
-    system = get_system_by_id_or_404(system_update.system_id)
+    system = get_system_by_id_or_404(system_id)
     system.advance = body.end_time
     system.serialize()
     return SystemOut(**system.dict(exclude_unset=True))
-
 
 
 @router.get("/all_data/")

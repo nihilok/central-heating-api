@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import NamedTuple, Union, Optional
+from typing import NamedTuple, Union, Optional, Iterable
 
 import requests
 from pydantic import BaseModel
