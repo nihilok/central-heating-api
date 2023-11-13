@@ -83,7 +83,7 @@ function toggleUIElements() {
     button.style.display = "none";
     advanceButton.style.display = "none";
     outputDiv.style.display = "none";
-    currentHeading.innerText = "";
+    currentHeading.style.display = "none";
     loginForm.style.display = "block"; // Show login form when not logged in
     return;
   }
@@ -94,7 +94,7 @@ function toggleUIElements() {
     button.style.display = "none";
     advanceButton.style.display = "none";
     periodsForm.style.display = "none";
-    currentHeading.innerText = "";
+    currentHeading.style.display = "none";
     return;
   }
   button.style.display = "block";
@@ -106,6 +106,7 @@ function toggleUIElements() {
     advanceButton.style.fontWeight = "normal";
     advanceButton.disabled = false;
   }
+  currentHeading.style.display = "block";
   currentHeading.innerText =
     system_data.system_id.substring(0, 1).toUpperCase() +
     system_data.system_id.substring(1);
@@ -156,6 +157,12 @@ function setSystem(system_id) {
   setTemperatureOutput();
 }
 
+function logout() {
+  t = undefined;
+  localStorage.clear();
+  window.location.reload();
+}
+
 function updatePeriod(event) {
   event.preventDefault();
   const systemId = system_data.system_id;
@@ -171,8 +178,7 @@ function updatePeriod(event) {
   fetch(`/api/v3/periods/${systemId}/`, {method, headers, body}).then(
     function (response) {
       if (response.status !== 200) {
-        localStorage.clear();
-        throw new Error(response.detail);
+        logout();
       }
       response
         .json()
@@ -202,8 +208,7 @@ function triggerAdvance() {
   fetch(`/api/v3/advance/${systemId}/`, {method, headers, body}).then(
     function (response) {
       if (response.status !== 200) {
-        localStorage.clear();
-        throw new Error(response.detail);
+        logout()
       }
       response.json().then(function (json) {
         system_data = json;
@@ -277,8 +282,7 @@ function onClick() {
       updateInterval();
       resetInterval();
     } else {
-      localStorage.clear();
-      window.location.reload();
+      logout();
     }
   });
 }
@@ -312,9 +316,7 @@ function login(e) {
   }).then((result) =>
     result.json().then((data) => {
       if (result.status !== 200) {
-        t = undefined;
-        localStorage.clear();
-        throw new Error(data.detail);
+        logout()
       }
       t = data;
       localStorage.setItem("t", JSON.stringify(t));
