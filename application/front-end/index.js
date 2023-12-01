@@ -65,7 +65,6 @@ function getSystems() {
   return fetch(`/api/v3/systems/`).then((response) =>
     response.json().then((data) => {
       if (response.status === 200) {
-        programOutput = "";
         return sortData(data);
       } else {
         button.disabled = true;
@@ -73,6 +72,22 @@ function getSystems() {
       }
     })
   );
+}
+
+function setProgramOutput () {
+  if (!system_data) {
+    return "";
+  }
+  programOutput =
+    system_data.program === true ? "Program: ON" : "Program: OFF";
+  if (system_data.program && system_data.periods) {
+    if (system_data.periods.length > 0) {
+      programOutput +=
+        `<br><br>Periods: ${JSON.stringify(system_data.periods)}` +
+        periodHelper;
+    }
+  }
+  return programOutput
 }
 
 function toggleUIElements() {
@@ -95,6 +110,7 @@ function toggleUIElements() {
     advanceButton.style.display = "none";
     periodsForm.style.display = "none";
     currentHeading.style.display = "none";
+    outputDiv.innerHTML = ""
     return;
   }
   button.style.display = "block";
@@ -111,6 +127,7 @@ function toggleUIElements() {
     system_data.system_id.substring(0, 1).toUpperCase() +
     system_data.system_id.substring(1);
   outputDiv.style.display = "block";
+  outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`
   if (!system_data?.program) {
     periodsForm.style.display = "none";
   } else {
@@ -144,16 +161,7 @@ function setSystem(system_id) {
     ? JSON.stringify(system_data.periods)
     : "";
   periodsInput.disabled = !system_data || !system_data.program;
-  programOutput +=
-    system_data.program === true ? "Program: ON" : "Program: OFF";
-  if (system_data.program && system_data.periods) {
-    if (system_data.periods.length > 0) {
-      programOutput +=
-        `<br><br>Periods: ${JSON.stringify(system_data.periods)}` +
-        periodHelper;
-    }
-  }
-  outputDiv.innerHTML = `${programOutput}${temperatureOutput}`;
+  outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`;
   setTemperatureOutput();
 }
 
