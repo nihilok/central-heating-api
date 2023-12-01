@@ -11,7 +11,7 @@ let buttons;
 let readout;
 let currentHeading;
 let temperatureMap = {};
-let INTERVAL_UPDATE = 5000;
+let INTERVAL_UPDATE = 3000;
 let system_data;
 let allSystems;
 let interval;
@@ -212,7 +212,9 @@ function triggerAdvance() {
       }
       response.json().then(function (json) {
         system_data = json;
-        toggleUIElements();
+        getSystems().then(data => {
+          allSystems = data
+        }).then(() => toggleUIElements())
       });
     }
   );
