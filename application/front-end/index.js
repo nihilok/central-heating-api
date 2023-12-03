@@ -126,7 +126,7 @@ function toggleUIElements() {
     system_data.system_id.substring(0, 1).toUpperCase() +
     system_data.system_id.substring(1);
   outputDiv.style.display = "block";
-  outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`;
+  outputDiv.innerHTML = `${temperatureOutput}`;
   if (!system_data?.program) {
     periodsForm.style.display = "none";
   } else {
@@ -161,7 +161,7 @@ function setSystem(system_id) {
     : "";
   console.log(system_data.periods);
   periodsInput.disabled = !system_data || !system_data.program;
-  outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`;
+  outputDiv.innerHTML = `${temperatureOutput}`;
   setTemperatureOutput();
 }
 
@@ -274,7 +274,7 @@ function setTemperatureOutput() {
   )}˚C ${!!currentTarget || relayOn ? "/" : ""} ${currentTarget || ""} ${
     relayOn ? "🔥" : ""
   }`;
-  outputDiv.innerHTML = `${programOutput}${temperatureOutput}`;
+  outputDiv.innerHTML = `${temperatureOutput}`;
 }
 
 function update(system) {
