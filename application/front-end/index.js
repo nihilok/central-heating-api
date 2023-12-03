@@ -152,7 +152,6 @@ function setSystem(system_id) {
   periodsInput.value = system_data.program
     ? JSON.stringify(system_data.periods.map((p) => [p.start, p.end, p.target]))
     : "";
-  console.log(system_data.periods);
   periodsInput.disabled = !system_data || !system_data.program;
   outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`;
   setTemperatureOutput();
