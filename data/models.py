@@ -277,14 +277,10 @@ class System(BaseModel):
                 # the below is to deserialise old (deprecated) versions of Period
                 periods=[
                     Period(start=float(p[0]), end=float(1), target=float(p[2]))
-                    for p in json.loads(system["periods"])
+                    for p in system["periods"]
                     if isinstance(p, list)
                 ]
-                + [
-                    Period(**p)
-                    for p in json.loads(system["periods"])
-                    if isinstance(p, dict)
-                ],
+                + [Period(**p) for p in system["periods"] if isinstance(p, dict)],
                 advance=advance,
             )
             yield system

@@ -186,7 +186,7 @@ function updatePeriod(event) {
     target: p[2],
   }));
 
-  const body = JSON.stringify(periods);
+  const body = JSON.stringify({ periods });
   const headers = new Headers({
     "Content-Type": "application/json",
     Authorization: `${t.token_type} ${t.access_token}`,

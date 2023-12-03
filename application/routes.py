@@ -71,7 +71,7 @@ async def target(system_id: Union[int, str]):
 @router.post("/periods/{system_id}/", dependencies=[Depends(get_current_user)])
 async def target(system_id: Union[int, str], body: PeriodsBody):
     system = get_system_by_id_or_404(system_id)
-    p_in = [Period(*p) for p in body.periods]
+    p_in = body.periods
     if len(p_in) < len(system.periods):
         system.periods = []
     for p in p_in:
