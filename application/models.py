@@ -15,7 +15,7 @@ class SystemUpdate(BaseModel):
 
 
 class PeriodsBody(BaseModel):
-    periods: list[list[float]]
+    periods: list[Period]
 
 
 class AdvanceBody(BaseModel):
@@ -24,6 +24,6 @@ class AdvanceBody(BaseModel):
 
 class SystemOut(BaseModel):
     system_id: str
-    periods: list[list[float]]
+    periods: list[Period]
     program: bool
     advance: Optional[datetime] = None

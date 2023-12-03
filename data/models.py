@@ -1,8 +1,10 @@
 import json
 import os
+from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple, Union, Optional, Iterable
+from uuid import uuid4
 
 import requests
 from pydantic import BaseModel
@@ -99,10 +101,25 @@ class RelayNode(BaseModel):
             return None
 
 
-class Period(NamedTuple):
+class Days(BaseModel):
+    monday: bool = True
+    tuesday: bool = True
+    wednesday: bool = True
+    thursday: bool = True
+    friday: bool = True
+    saturday: bool = True
+    sunday: bool = True
+
+
+default_days = Days()
+
+
+class Period(BaseModel):
     start: float
     end: float
     target: float
+    days: Days = default_days
+    id: str = uuid4().hex
 
 
 class System(BaseModel):
@@ -188,7 +205,7 @@ class System(BaseModel):
         if update:
             self.periods = list(
                 filter(
-                    lambda x: x.start != update.start and x.end != update.end,
+                    lambda x: x.id != update.id,
                     self.periods,
                 )
             )
@@ -217,7 +234,7 @@ class System(BaseModel):
             "sensor": sensor_dict,
             "system_id": self.system_id,
             "program": self.program,
-            "periods": json.dumps(self.periods),
+            "periods": [p.dict() for p in self.periods],
             "advance": self.advance,
         }
 
@@ -257,8 +274,16 @@ class System(BaseModel):
                 sensor=sensor,
                 system_id=system["system_id"],
                 program=system["program"],
+                # the below is to deserialise old (deprecated) versions of Period
                 periods=[
-                    Period(p[0], p[1], p[2]) for p in json.loads(system["periods"])
+                    Period(start=float(p[0]), end=float(1), target=float(p[2]))
+                    for p in json.loads(system["periods"])
+                    if isinstance(p, list)
+                ]
+                + [
+                    Period(**p)
+                    for p in json.loads(system["periods"])
+                    if isinstance(p, dict)
                 ],
                 advance=advance,
             )

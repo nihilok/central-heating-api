@@ -74,12 +74,11 @@ function getSystems() {
   );
 }
 
-function setProgramOutput () {
+function setProgramOutput() {
   if (!system_data) {
     return "";
   }
-  programOutput =
-    system_data.program === true ? "Program: ON" : "Program: OFF";
+  programOutput = system_data.program === true ? "Program: ON" : "Program: OFF";
   if (system_data.program && system_data.periods) {
     if (system_data.periods.length > 0) {
       programOutput +=
@@ -87,7 +86,7 @@ function setProgramOutput () {
         periodHelper;
     }
   }
-  return programOutput
+  return programOutput;
 }
 
 function toggleUIElements() {
@@ -110,7 +109,7 @@ function toggleUIElements() {
     advanceButton.style.display = "none";
     periodsForm.style.display = "none";
     currentHeading.style.display = "none";
-    outputDiv.innerHTML = ""
+    outputDiv.innerHTML = "";
     return;
   }
   button.style.display = "block";
@@ -127,7 +126,7 @@ function toggleUIElements() {
     system_data.system_id.substring(0, 1).toUpperCase() +
     system_data.system_id.substring(1);
   outputDiv.style.display = "block";
-  outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`
+  outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`;
   if (!system_data?.program) {
     periodsForm.style.display = "none";
   } else {
@@ -158,8 +157,9 @@ function setSystem(system_id) {
   button.innerHTML = system_data.program === false ? "ENABLE" : "DISABLE";
   button.disabled = false;
   periodsInput.value = system_data.program
-    ? JSON.stringify(system_data.periods)
+    ? JSON.stringify(system_data.periods.map((p) => [p.start, p.end, p.target]))
     : "";
+  console.log(system_data.periods);
   periodsInput.disabled = !system_data || !system_data.program;
   outputDiv.innerHTML = `${setProgramOutput()}${temperatureOutput}`;
   setTemperatureOutput();
@@ -178,12 +178,20 @@ function updatePeriod(event) {
     return;
   }
   const method = "POST";
-  const body = JSON.stringify({periods: JSON.parse(periodsInput.value)});
+
+  let periods = JSON.parse(periodsInput.value);
+  periods = periods.map((p) => ({
+    start: p[0],
+    end: p[1],
+    target: p[2],
+  }));
+
+  const body = JSON.stringify(periods);
   const headers = new Headers({
     "Content-Type": "application/json",
     Authorization: `${t.token_type} ${t.access_token}`,
   });
-  fetch(`/api/v3/periods/${systemId}/`, {method, headers, body}).then(
+  fetch(`/api/v3/periods/${systemId}/`, { method, headers, body }).then(
     function (response) {
       if (response.status !== 200) {
         logout();
@@ -208,21 +216,23 @@ function triggerAdvance() {
     return;
   }
   const method = "POST";
-  const body = JSON.stringify({end_time: Date.now() / 1000 + 60 * 60});
+  const body = JSON.stringify({ end_time: Date.now() / 1000 + 60 * 60 });
   const headers = new Headers({
     "Content-Type": "application/json",
     Authorization: `${t.token_type} ${t.access_token}`,
   });
-  fetch(`/api/v3/advance/${systemId}/`, {method, headers, body}).then(
+  fetch(`/api/v3/advance/${systemId}/`, { method, headers, body }).then(
     function (response) {
       if (response.status !== 200) {
-        logout()
+        logout();
       }
       response.json().then(function (json) {
         system_data = json;
-        getSystems().then(data => {
-          allSystems = data
-        }).then(() => toggleUIElements())
+        getSystems()
+          .then((data) => {
+            allSystems = data;
+          })
+          .then(() => toggleUIElements());
       });
     }
   );
@@ -268,7 +278,7 @@ function setTemperatureOutput() {
 }
 
 function update(system) {
-  updateWrapper(system)
+  updateWrapper(system);
 }
 
 function onClick() {
@@ -326,7 +336,7 @@ function login(e) {
   }).then((result) =>
     result.json().then((data) => {
       if (result.status !== 200) {
-        logout()
+        logout();
       }
       t = data;
       localStorage.setItem("t", JSON.stringify(t));
@@ -354,7 +364,7 @@ function updateWrapper(system) {
   updateTemperatureMap()
     .then(setReadout)
     .then(() => getTargetInfo(system))
-    .then(data => {
+    .then((data) => {
       currentTarget = data.current_target;
       relayOn = data.relay_on;
       setTemperatureOutput();
@@ -362,7 +372,7 @@ function updateWrapper(system) {
 }
 
 function getAndSetSystem(systemId) {
-  getSystems().then(data => {
+  getSystems().then((data) => {
     allSystems = data;
     setSystem(systemId);
   });
@@ -394,10 +404,13 @@ window.onload = () => {
   currentHeading = document.querySelector("#current-system");
   t = JSON.parse(localStorage.getItem("t") ?? "null");
   toggleUIElements();
-  loginForm.addEventListener("submit", login)
-  button.addEventListener("click", () => getAndSetSystem(system_data.system_id));
+  periodsForm.addEventListener("submit", updatePeriod);
+  loginForm.addEventListener("submit", login);
+  button.addEventListener("click", () =>
+    getAndSetSystem(system_data.system_id)
+  );
 
-  getSystems().then(data => {
+  getSystems().then((data) => {
     allSystems = data;
     createSystemButtons(allSystems);
     setReadout().then(() => toggleUIElements());
