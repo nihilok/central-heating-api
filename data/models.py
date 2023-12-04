@@ -146,6 +146,11 @@ class System(BaseModel):
         check_time = current_hour + current_minute_decimal
         return check_time
 
+    @staticmethod
+    def _the_day_today():
+        current_time = datetime.now()
+        return current_time.strftime("%A").lower()
+
     @property
     def current_target(self):
         if not self.program:
@@ -154,10 +159,12 @@ class System(BaseModel):
             return DEFAULT_MINIMUM_TARGET
 
         check_time = self._decimal_time()
+        check_day = self._the_day_today()
         try:
             period = next(
                 filter(
-                    lambda x: x.start <= check_time < x.end,
+                    lambda x: x.start <= check_time < x.end
+                    and x.days.dict()[check_day],
                     self.periods,
                 )
             )
