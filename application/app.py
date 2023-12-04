@@ -37,21 +37,35 @@ if RUN_EVENT_LOOP_ON_STARTUP:
 
 
 @app.get("/")
-async def index():
+async def index_html():
     file = STATIC_FILES_PATH / "index.html"
     with open(file, "rb") as f:
         return HTMLResponse(content=f.read())
 
 
 @app.get("/index.js")
-async def index():
-    file = STATIC_FILES_PATH / "index.js"
+async def index_js():
+    file = STATIC_FILES_PATH / "index2.js"
     with open(file, "rb") as f:
         return Response(content=f.read(), media_type="text/javascript")
 
 
 @app.get("/style.css")
-async def index():
+async def index_css():
     file = STATIC_FILES_PATH / "style.css"
     with open(file, "rb") as f:
         return Response(content=f.read(), media_type="text/css")
+
+
+@app.get("/index-1c12594a.css")
+async def index_css():
+    file = STATIC_FILES_PATH / "index-1c12594a.css"
+    with open(file, "rb") as f:
+        return Response(content=f.read(), media_type="text/css")
+
+
+@app.get("/index-4dd1a41d.js")
+async def index_css():
+    file = STATIC_FILES_PATH / "index-4dd1a41d.js"
+    with open(file, "rb") as f:
+        return Response(content=f.read(), media_type="text/javascript")
