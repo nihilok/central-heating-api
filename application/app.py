@@ -36,22 +36,22 @@ if RUN_EVENT_LOOP_ON_STARTUP:
         await stop_async_loop()
 
 
+async def static_response(filename, response_type=Response):
+    file = STATIC_FILES_PATH / filename
+    with open(file, "rb") as f:
+        return response_type(content=f.read())
+
+
 @app.get("/")
 async def index_html():
-    file = STATIC_FILES_PATH / "index.html"
-    with open(file, "rb") as f:
-        return HTMLResponse(content=f.read())
+    return static_response("index.html", HTMLResponse)
 
 
-@app.get("/index.js")
+@app.get("/app.min.js")
 async def index_js():
-    file = STATIC_FILES_PATH / "index.js"
-    with open(file, "rb") as f:
-        return Response(content=f.read(), media_type="text/javascript")
+    return static_response("app.min.js")
 
 
 @app.get("/main.css")
 async def index_css():
-    file = STATIC_FILES_PATH / "main.css"
-    with open(file, "rb") as f:
-        return Response(content=f.read(), media_type="text/css")
+    return static_response("main.css")
