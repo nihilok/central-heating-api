@@ -44,14 +44,14 @@ async def static_response(filename, response_type=Response):
 
 @app.get("/")
 async def index_html():
-    return static_response("index.html", HTMLResponse)
+    return await static_response("index.html", HTMLResponse)
 
 
 @app.get("/app.min.js")
 async def index_js():
-    return static_response("app.min.js")
+    return await static_response("app.min.js")
 
 
 @app.get("/main.css")
 async def index_css():
-    return static_response("main.css")
+    return await static_response("main.css")
