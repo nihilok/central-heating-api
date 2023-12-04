@@ -44,7 +44,7 @@ async def static_response(filename, media_type="text/html"):
 
 @app.get("/")
 async def index_html():
-    return await static_response("index.html", HTMLResponse)
+    return await static_response("index.html", "text/html")
 
 
 @app.get("/app.min.js")
