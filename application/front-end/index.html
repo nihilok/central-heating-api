@@ -1,43 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
-    <title>Central Heating</title>
-    <link rel="stylesheet" href="style.css"/>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Heating</title>
     <script type="module" crossorigin src="index.js"></script>
     <link rel="stylesheet" href="main.css">
-</head>
-<body>
-<h1>Central Heating</h1>
-<div id="readout"></div>
-<div id="buttons" style="display: none;"></div>
-<h3 id="current-system" style="display: none;"></h3>
-<div class="output" id="output" style="display: none;"></div>
-<button onclick="onClick()" id="program" disabled style="display: none">DISABLE</button>
-<button id="advance" onclick="triggerAdvance()" style="display: none;">ADVANCE (1h)</button>
-<!--<form id="periodsForm" style="display: none;">-->
-<!--    <label id="periods_label"><input id="new_periods">-->
-<!--        <div><span>update periods</span><span class="period-helper"><br>[[startHour, endHour, targetTemp], ...]</span>-->
-<!--        </div>-->
-<!--    </label>-->
-<!--</form>-->
-<form id="loginForm" style="display: none;">
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <label>
-        <b>LOGIN: </b>
-    </label>
-    <input type="text" id="username" autocomplete="username" placeholder="Username" required>
-    <input type="password" id="password" autocomplete="new-password" placeholder="Password" required>
-    <input type="submit" style="display: none">
-</form>
-<div id="root"></div>
-<!--<script src="index2.js"></script>-->
-<script src="https://momentjs.com/downloads/moment.js"></script>
-</body>
+  </head>
+  <body>
+    <div id="root"></div>
+
+  </body>
 </html>

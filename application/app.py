@@ -45,27 +45,13 @@ async def index_html():
 
 @app.get("/index.js")
 async def index_js():
-    file = STATIC_FILES_PATH / "index2.js"
+    file = STATIC_FILES_PATH / "index.js"
     with open(file, "rb") as f:
         return Response(content=f.read(), media_type="text/javascript")
 
 
-@app.get("/style.css")
+@app.get("/main.css")
 async def index_css():
-    file = STATIC_FILES_PATH / "style.css"
+    file = STATIC_FILES_PATH / "main.css"
     with open(file, "rb") as f:
         return Response(content=f.read(), media_type="text/css")
-
-
-@app.get("/index-1c12594a.css")
-async def index_css():
-    file = STATIC_FILES_PATH / "index-1c12594a.css"
-    with open(file, "rb") as f:
-        return Response(content=f.read(), media_type="text/css")
-
-
-@app.get("/index-4dd1a41d.js")
-async def index_css():
-    file = STATIC_FILES_PATH / "index-4dd1a41d.js"
-    with open(file, "rb") as f:
-        return Response(content=f.read(), media_type="text/javascript")
