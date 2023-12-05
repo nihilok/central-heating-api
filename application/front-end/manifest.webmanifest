@@ -1,1 +1,21 @@
-{"name":"heating-app","short_name":"heating-app","start_url":"/","display":"standalone","background_color":"#ffffff","lang":"en","scope":"/"}
+{
+  "short_name": "HeatingApp",
+  "name": "Heating Application",
+  "icons": [
+    {
+      "src": "/static/flame-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/flame-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFFFF",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#535bf2"
+}
