@@ -55,3 +55,18 @@ async def index_js():
 @app.get("/main.css")
 async def index_css():
     return await static_response("main.css", "text/css")
+
+
+@app.get("/registerSW.js")
+async def register_sw():
+    return await static_response("registerSW.js", "application/javascript")
+
+
+@app.get("/sw.js")
+async def sw():
+    return await static_response("sw.js", "application/javascript")
+
+
+@app.get("/manifest.webmanifest")
+async def manifest():
+    return await static_response("manifest.webmanifest", "text/plain")
