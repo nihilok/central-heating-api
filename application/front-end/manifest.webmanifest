@@ -1,6 +1,6 @@
 {
   "short_name": "HeatingApp",
-  "name": "Heating Application",
+  "name": "Heating App",
   "icons": [
     {
       "src": "/static/flame-192.png",
@@ -14,7 +14,7 @@
     }
   ],
   "start_url": "/",
-  "background_color": "#FFFFFF",
+  "background_color": "#242424",
   "display": "standalone",
   "scope": "/",
   "theme_color": "#535bf2"
