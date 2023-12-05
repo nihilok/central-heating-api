@@ -3,7 +3,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import HTMLResponse, Response
+from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
 
 from application.constants import RUN_EVENT_LOOP_ON_STARTUP
 from application.event_loop import run_async_loop, stop_async_loop
@@ -42,31 +43,9 @@ async def static_response(filename, media_type="text/html"):
         return Response(content=f.read(), media_type=media_type)
 
 
+app.mount("/static", StaticFiles(directory=STATIC_FILES_PATH), name="static")
+
+
 @app.get("/")
 async def index_html():
-    return await static_response("index.html", "text/html")
-
-
-@app.get("/app.min.js")
-async def index_js():
-    return await static_response("app.min.js", "application/javascript")
-
-
-@app.get("/main.css")
-async def index_css():
-    return await static_response("main.css", "text/css")
-
-
-@app.get("/registerSW.js")
-async def register_sw():
-    return await static_response("registerSW.js", "application/javascript")
-
-
-@app.get("/sw.js")
-async def sw():
-    return await static_response("sw.js", "application/javascript")
-
-
-@app.get("/manifest.webmanifest")
-async def manifest():
-    return await static_response("manifest.webmanifest", "text/plain")
+    return await static_response("index.html")
