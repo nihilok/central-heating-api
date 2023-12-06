@@ -1,5 +1,6 @@
 from typing import Optional, Union
 
+from application.constants import DEFAULT_MINIMUM_TARGET
 from application.models import SystemUpdate, PeriodsBody, SystemOut, AdvanceBody
 from application.logs import get_logger
 from data.models import System, Period
@@ -19,10 +20,19 @@ logger = get_logger(__name__)
 async def get_systems(system_id: Optional[str] = None):
     systems = System.deserialize_systems()
     if system_id is None:
-        return [SystemOut(**s.dict(exclude_unset=True)) for s in systems]
+        return [
+            SystemOut(
+                **s.dict(exclude_unset=True)
+                | {"is_within_period": s.current_target > DEFAULT_MINIMUM_TARGET}
+            )
+            for s in systems
+        ]
     for system in systems:
         if system.system_id == system_id:
-            return SystemOut(**system.dict())
+            return SystemOut(
+                **system.dict()
+                | {"is_within_period": s.current_target > DEFAULT_MINIMUM_TARGET}
+            )
 
 
 def get_system_by_id_or_404(system_id):

@@ -28,3 +28,4 @@ class SystemOut(BaseModel):
     program: bool
     advance: Optional[datetime] = None
     boost: Optional[datetime] = None
+    is_within_period: bool
