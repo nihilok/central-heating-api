@@ -71,9 +71,7 @@ async def temperature(system_id: Union[int, str]):
 async def target(system_id: Union[int, str]):
     system = get_system_by_id_or_404(system_id)
     return {
-        "current_target": system.current_target
-        if not system.advance
-        else system.next_target,
+        "current_target": system.current_target,
         "relay_on": system.relay_on,
     }
 
