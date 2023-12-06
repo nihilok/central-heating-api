@@ -27,3 +27,4 @@ class SystemOut(BaseModel):
     periods: list[Period]
     program: bool
     advance: Optional[datetime] = None
+    boost: Optional[datetime] = None

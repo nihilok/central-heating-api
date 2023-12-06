@@ -77,9 +77,26 @@ async def periods(system_id: Union[int, str], body: PeriodsBody):
 
 
 @router.post("/advance/{system_id}/", dependencies=[Depends(get_current_user)])
-async def target(system_id: Union[int, str], body: AdvanceBody):
+async def advance(system_id: Union[int, str], body: AdvanceBody):
     system = get_system_by_id_or_404(system_id)
     system.advance = body.end_time
+    system.serialize()
+    return SystemOut(**system.dict(exclude_unset=True))
+
+
+@router.post("/boost/{system_id}/", dependencies=[Depends(get_current_user)])
+async def boost(system_id: Union[int, str], body: AdvanceBody):
+    system = get_system_by_id_or_404(system_id)
+    system.boost = body.end_time
+    system.serialize()
+    return SystemOut(**system.dict(exclude_unset=True))
+
+
+@router.post("/cancel_all/{system_id}/")
+async def cancel(system_id: Union[int, str]):
+    system = get_system_by_id_or_404(system_id)
+    system.boost = None
+    system.advance = None
     system.serialize()
     return SystemOut(**system.dict(exclude_unset=True))
 

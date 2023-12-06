@@ -129,6 +129,7 @@ class System(BaseModel):
     program: bool = False
     periods: list[Period] = []
     advance: Optional[float] = None
+    boost: Optional[float] = None
 
     @property
     def temperature(self):
@@ -153,6 +154,8 @@ class System(BaseModel):
 
     @property
     def current_target(self):
+        if self.boost:
+            return 999
         if not self.program:
             if self.advance:
                 return self.next_target
@@ -243,6 +246,7 @@ class System(BaseModel):
             "program": self.program,
             "periods": [p.dict() for p in self.periods],
             "advance": self.advance,
+            "boost": self.boost,
         }
 
         if not os.path.exists(PERSISTENCE_FILE):
@@ -276,6 +280,7 @@ class System(BaseModel):
             relay = RelayNode(**system["relay"])
             sensor = SensorNode(**system["sensor"])
             advance = system.get("advance")
+            boost = system.get("boost")
             system = System(
                 relay=relay,
                 sensor=sensor,
@@ -289,6 +294,7 @@ class System(BaseModel):
                 ]
                 + [Period(**p) for p in system["periods"] if isinstance(p, dict)],
                 advance=advance,
+                boost=boost,
             )
             yield system
 
