@@ -1,7 +1,7 @@
 import json
 import os
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import NamedTuple, Union, Optional, Iterable
 from uuid import uuid4
@@ -148,17 +148,18 @@ class System(BaseModel):
         return check_time
 
     @staticmethod
-    def _the_day_today():
-        current_time = datetime.now()
-        return current_time.strftime("%A").lower()
+    def _the_day_today(plus_days=0):
+        t = datetime.now() + timedelta(days=plus_days)
+        return t.strftime("%A").lower()
 
     @property
     def current_target(self):
         if self.boost:
             return 999
+        if self.advance:
+            return self.next_target
+
         if not self.program:
-            if self.advance:
-                return self.next_target
             return DEFAULT_MINIMUM_TARGET
 
         check_time = self._decimal_time()
@@ -178,15 +179,25 @@ class System(BaseModel):
     @property
     def next_target(self):
         check_time = self._decimal_time()
+        check_day = self._the_day_today(plus_days=1)
+
         try:
             period = next(
                 filter(
-                    lambda x: x.end > check_time,
+                    lambda x: x.end > check_time and x.days.dict()[check_day],
                     sorted(self.periods, key=lambda p: p.end),
                 )
             )
         except StopIteration:
-            return DEFAULT_ROOM_TEMP
+            try:
+                return next(
+                    filter(
+                        lambda d: d.days.dict()[check_day],
+                        sorted(self.periods, key=lambda p: p.start),
+                    )
+                ).target
+            except StopIteration:
+                return DEFAULT_ROOM_TEMP
         return period.target
 
     @log_exceptions
