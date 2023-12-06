@@ -49,3 +49,8 @@ app.mount("/static", StaticFiles(directory=STATIC_FILES_PATH), name="static")
 @app.get("/")
 async def index_html():
     return await static_response("index.html")
+
+
+@app.get("/assets/flame-b2dd84ec.png")
+async def flame_icon():
+    return await static_response("assets/flame-b2dd84ec.png", "image/png")
