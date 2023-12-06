@@ -34,12 +34,19 @@ async def run_check(system: System):
     if (
         system.advance
         and system.advance > current_time
-        and temperature < system.next_target
+        and temperature < system.current_target
     ):
         logger.debug("ADVANCE ON!")
         return True
     elif system.advance and system.advance <= current_time:
         system.advance = None
+        system.serialize()
+
+    if system.boost and system.boost > current_time and temperature < 999:
+        logger.debug("BOOST ON!")
+        return True
+    elif system.boost and system.boost <= current_time:
+        system.boost = None
         system.serialize()
 
     if not system.program:
@@ -73,7 +80,9 @@ async def event_loop(
                 else:
                     system.switch_off()
             except Exception as e:
-                logger.error(f"ERROR in system '{system.system_id}': {e.__class__.__name__}: {e}")
+                logger.error(
+                    f"ERROR in system '{system.system_id}': {e.__class__.__name__}: {e}"
+                )
 
         await asyncio.sleep(interval)
 
