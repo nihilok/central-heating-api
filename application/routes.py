@@ -1,3 +1,5 @@
+import os
+
 from typing import Optional, Union
 
 from application.constants import DEFAULT_MINIMUM_TARGET
@@ -145,3 +147,9 @@ async def start():
 async def stop():
     await stop_async_loop()
     return {"detail": "stopped"}
+
+
+@router.post("/reboot_system/", dependencies=[Depends(get_current_user)])
+async def reboot():
+    os.system("sudo reboot")
+    return {}
