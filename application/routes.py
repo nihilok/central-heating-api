@@ -35,7 +35,7 @@ async def get_systems(system_id: Optional[str] = None):
             )
 
 
-def get_system_by_id_or_404(system_id):
+def get_system_by_id_or_404(system_id) -> System:
     system = System.get_by_id(system_id)
     if not system:
         raise HTTPException(404, "System not found")
@@ -123,6 +123,16 @@ async def get_all_data():
             }
         )
     return {"systems": data}
+
+
+@router.post("/program/{system_id}/{on}/", dependencies=[Depends(get_current_user)])
+async def program(system_id: str, on: str):
+    system = get_system_by_id_or_404(system_id)
+    if on not in {"on", "off"}:
+        raise HTTPException(404, "NOT FOUND")
+    system.program = True if on == "on" else False
+    system.serialize()
+    return {"program_on": system.program}
 
 
 @router.get("/start_loop/", dependencies=[Depends(get_current_user)])
