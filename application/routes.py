@@ -2,10 +2,12 @@ import os
 
 from typing import Optional, Union
 
+from pydantic import ValidationError
+
 from application.constants import DEFAULT_MINIMUM_TARGET
 from application.models import SystemUpdate, PeriodsBody, SystemOut, AdvanceBody
 from application.logs import get_logger
-from data.models import System, Period
+from data.models import System
 from fastapi import APIRouter, HTTPException, Depends
 
 from application.event_loop import (
@@ -18,30 +20,33 @@ router = APIRouter(prefix="/api/v3")
 logger = get_logger(__name__)
 
 
-@router.get("/systems/")
-async def get_systems(system_id: Optional[str] = None):
-    systems = System.deserialize_systems()
-    if system_id is None:
-        return [
-            SystemOut(
-                **s.dict(exclude_unset=True)
-                | {"is_within_period": s.current_target > DEFAULT_MINIMUM_TARGET}
-            )
-            for s in systems
-        ]
-    for system in systems:
-        if system.system_id == system_id:
-            return SystemOut(
-                **system.dict()
-                | {"is_within_period": s.current_target > DEFAULT_MINIMUM_TARGET}
-            )
-
-
 def get_system_by_id_or_404(system_id) -> System:
     system = System.get_by_id(system_id)
     if not system:
         raise HTTPException(404, "System not found")
     return system
+
+
+@router.get("/systems/")
+async def get_systems() -> list[SystemOut]:
+    systems = System.deserialize_systems()
+    return [
+        SystemOut(
+            **s.dict(exclude_unset=True)
+            | {"is_within_period": s.current_target > DEFAULT_MINIMUM_TARGET}
+        )
+        for s in systems
+        if s is not None
+    ]
+
+
+@router.get("/systems/{system_id}/}")
+async def get_system(system_id: Optional[str] = None) -> SystemOut:
+    system = get_system_by_id_or_404(system_id)
+    return SystemOut(
+        **system.dict()
+        | {"is_within_period": system.current_target > DEFAULT_MINIMUM_TARGET}
+    )
 
 
 @router.post("/systems/", dependencies=[Depends(get_current_user)])
@@ -59,8 +64,10 @@ async def new_or_update_system(system_update: SystemUpdate):
         )
         new.serialize()
         return {}
-    except:
-        raise HTTPException(400, "Bad Request")
+    except ValidationError as ve:
+        raise HTTPException(422, "Unprocessable Entity") from ve
+    except Exception as e:
+        raise HTTPException(400, "Bad Request") from e
 
 
 @router.get("/temperature/{system_id}/")
