@@ -14,23 +14,30 @@ GLOBAL_RUN_CONDITION_FLAG = True
 logger = get_logger(__name__)
 
 
+class CommunicationError(Exception):
+    pass
+
+
 @log_exceptions
-async def run_check(system: System):
+async def run_check(system: System) -> bool:
+    should_switch_on = False
     logger.debug(f"Running temperature check ({system.system_id})")
     temperature, target = system.temperature, system.current_target
     logger.debug(f"{temperature=} {target=}")
 
-    relay_state = system.relay_on
-
     if temperature is None:
-        logger.error(
+        # system failed to communicate with temperature node.
+        raise CommunicationError(
             f"Temperature reading for system '{system.system_id}' is not available"
         )
-        return False
+
+    relay_state = system.relay_on
 
     if relay_state is None:
-        logger.error(f"Relay for system '{system.system_id}' is not available")
-        return False
+        # system failed to communicate with relay node.
+        raise CommunicationError(
+            f"Relay for system '{system.system_id}' is not available"
+        )
 
     current_time = time.time()
 
@@ -44,29 +51,33 @@ async def run_check(system: System):
         and temperature < system.current_target
     ):
         logger.debug("ADVANCE ON!")
-        return True
+        should_switch_on = True
+        return should_switch_on
     elif system.advance and system.advance <= current_time:
         system.advance = None
         system.serialize()
 
     if system.boost and system.boost > current_time and temperature < 999:
         logger.debug("BOOST ON!")
-        return True
+        should_switch_on = True
+        return should_switch_on
     elif system.boost and system.boost <= current_time:
         system.boost = None
         system.serialize()
 
     if not system.program:
-        return False
+        return should_switch_on
 
     if relay_state:
         if temperature >= target:
-            return False
-        return True
+            return should_switch_on
+        should_switch_on = True
+        return should_switch_on
     else:
         if temperature <= target - THERMOSTAT_THRESHOLD:
-            return True
-        return False
+            should_switch_on = True
+            return should_switch_on
+        return should_switch_on
 
 
 @log_exceptions

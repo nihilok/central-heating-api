@@ -20,6 +20,7 @@ def get_logger(name=__name__):
 
 
 def log_exceptions(f):
+    """All exceptions are logged and wrapped function returns None if an exception is raised."""
     logger = get_logger(__name__)
 
     def logged_f(*args, **kwargs):
