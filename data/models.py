@@ -1,13 +1,12 @@
 import json
 import os
-from collections import namedtuple
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import NamedTuple, Union, Optional, Iterable
+from typing import Union, Optional, Iterable
 from uuid import uuid4
 
 import requests
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from application.constants import DEFAULT_MINIMUM_TARGET
 from application.logs import log_exceptions
@@ -94,11 +93,8 @@ class RelayNode(BaseModel):
 
     @log_exceptions
     def status(self):
-        try:
-            resp = requests.get(f"{self.url_status}", timeout=5)
-            return not int(resp.content)
-        except ValueError:
-            return None
+        resp = requests.get(f"{self.url_status}", timeout=5)
+        return not int(resp.content)
 
 
 class Days(BaseModel):
@@ -288,26 +284,29 @@ class System(BaseModel):
         except FileNotFoundError:
             return []
         for system in current["systems"]:
-            relay = RelayNode(**system["relay"])
-            sensor = SensorNode(**system["sensor"])
-            advance = system.get("advance")
-            boost = system.get("boost")
-            system = System(
-                relay=relay,
-                sensor=sensor,
-                system_id=system["system_id"],
-                program=system["program"],
-                # the below is to deserialise old (deprecated) versions of Period
-                periods=[
-                    Period(start=float(p[0]), end=float(1), target=float(p[2]))
-                    for p in system["periods"]
-                    if isinstance(p, list)
-                ]
-                + [Period(**p) for p in system["periods"] if isinstance(p, dict)],
-                advance=advance,
-                boost=boost,
-            )
-            yield system
+            try:
+                relay = RelayNode(**system["relay"])
+                sensor = SensorNode(**system["sensor"])
+                advance = system.get("advance")
+                boost = system.get("boost")
+                system = System(
+                    relay=relay,
+                    sensor=sensor,
+                    system_id=system["system_id"],
+                    program=system["program"],
+                    # the below is to deserialise old (deprecated) versions of Period
+                    periods=[
+                        Period(start=float(p[0]), end=float(1), target=float(p[2]))
+                        for p in system["periods"]
+                        if isinstance(p, list)
+                    ]
+                    + [Period(**p) for p in system["periods"] if isinstance(p, dict)],
+                    advance=advance,
+                    boost=boost,
+                )
+                yield system
+            except ValidationError:
+                yield None
 
     @classmethod
     @log_exceptions

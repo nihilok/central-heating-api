@@ -23,6 +23,13 @@ async def run_check(system: System):
     relay_state = system.relay_on
 
     if temperature is None:
+        logger.error(
+            f"Temperature reading for system '{system.system_id}' is not available"
+        )
+        return False
+
+    if relay_state is None:
+        logger.error(f"Relay for system '{system.system_id}' is not available")
         return False
 
     current_time = time.time()
