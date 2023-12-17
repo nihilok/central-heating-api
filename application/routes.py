@@ -28,18 +28,20 @@ def get_system_by_id_or_404(system_id) -> System:
 
 
 @router.get("/systems/")
-async def get_systems(system_id: Optional[str] = None):
+async def get_systems() -> list[SystemOut]:
     systems = System.deserialize_systems()
-    if system_id is None:
-        return [
-            SystemOut(
-                **s.dict(exclude_unset=True)
-                | {"is_within_period": s.current_target > DEFAULT_MINIMUM_TARGET}
-            )
-            for s in systems
-            if s is not None
-        ]
+    return [
+        SystemOut(
+            **s.dict(exclude_unset=True)
+            | {"is_within_period": s.current_target > DEFAULT_MINIMUM_TARGET}
+        )
+        for s in systems
+        if s is not None
+    ]
 
+
+@router.get("/systems/{system_id}/}")
+async def get_system(system_id: Optional[str] = None) -> SystemOut:
     system = get_system_by_id_or_404(system_id)
     return SystemOut(
         **system.dict()
