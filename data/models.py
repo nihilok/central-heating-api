@@ -9,12 +9,14 @@ import requests
 from pydantic import BaseModel, ValidationError
 
 from application.constants import DEFAULT_MINIMUM_TARGET
-from application.logs import log_exceptions
+from application.logs import log_exceptions, get_logger
 
 DEFAULT_ROOM_TEMP = 22
 
 PERSISTENCE_FILE = Path(os.path.dirname(os.path.abspath(__file__))) / "persistence.json"
 file_lock = False
+
+logger = get_logger()
 
 """
 // EXAMPLE:
@@ -276,7 +278,6 @@ class System(BaseModel):
 
     @classmethod
     @use_file_lock
-    @log_exceptions
     def deserialize_systems(cls) -> Iterable["System"]:
         try:
             with open(PERSISTENCE_FILE, "r") as f:
@@ -305,7 +306,8 @@ class System(BaseModel):
                     boost=boost,
                 )
                 yield system
-            except ValidationError:
+            except Exception as e:
+                logger.error(e)
                 yield None
 
     @classmethod
