@@ -314,5 +314,5 @@ class System(BaseModel):
     @log_exceptions
     def get_by_id(cls, system_id):
         for system in cls.deserialize_systems():
-            if system.system_id == system_id:
+            if system and system.system_id == system_id:
                 return system

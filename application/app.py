@@ -6,8 +6,8 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
-from application.constants import RUN_EVENT_LOOP_ON_STARTUP
-from application.event_loop import run_async_loop, stop_async_loop
+from application.constants import RUN_EVENT_LOOP_ON_STARTUP, CHECK_FREQUENCY_SECONDS
+from application.event_loop import event_loop as heating_event_loop
 from application.routes import router as api_router
 from authentication.routes import router as auth_router
 
@@ -30,11 +30,11 @@ if RUN_EVENT_LOOP_ON_STARTUP:
 
     @app.on_event("startup")
     def start():
-        run_async_loop()
+        heating_event_loop.run(CHECK_FREQUENCY_SECONDS)
 
     @app.on_event("shutdown")
     async def stop():
-        await stop_async_loop()
+        await heating_event_loop.stop_and_cleanup()
 
 
 async def static_response(filename, media_type="text/html"):
