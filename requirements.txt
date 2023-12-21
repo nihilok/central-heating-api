@@ -8,3 +8,4 @@ passlib~=1.7.4
 python-jose
 bcrypt
 python-multipart
+aiofiles~=23.2.1
