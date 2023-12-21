@@ -1,10 +1,13 @@
+import asyncio
+import functools
 import json
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union, Optional, Iterable
+from typing import Union, Optional, Iterable, AsyncIterable
 from uuid import uuid4
 
+import aiofiles
 import requests
 from pydantic import BaseModel, ValidationError
 
@@ -51,19 +54,6 @@ logger = get_logger()
   ]
 }
 """
-
-
-def use_file_lock(f):
-    def w(*args, **kwargs):
-        global file_lock
-        while file_lock:
-            pass
-        file_lock = True
-        result = f(*args, **kwargs)
-        file_lock = False
-        return result
-
-    return w
 
 
 class SensorNode(BaseModel):
@@ -118,6 +108,9 @@ class Period(BaseModel):
     target: float
     days: Days = default_days
     id: str = uuid4().hex
+
+
+file_semaphore = asyncio.Semaphore(1)
 
 
 class System(BaseModel):
@@ -243,70 +236,87 @@ class System(BaseModel):
         else:
             self.periods = periods_in
 
-    @use_file_lock
-    @log_exceptions
-    def serialize(self):
-        sensor_dict = self.sensor.dict(exclude_unset=True)
-        relay_dict = self.relay.dict(exclude_unset=True)
-        serialised_data = {
-            "relay": relay_dict,
-            "sensor": sensor_dict,
-            "system_id": self.system_id,
-            "program": self.program,
-            "periods": [p.dict() for p in self.periods],
-            "advance": self.advance,
-            "boost": self.boost,
-        }
+    async def attribute_changed(self):
+        await self.serialize()
 
-        if not os.path.exists(PERSISTENCE_FILE):
-            with open(PERSISTENCE_FILE, "w") as f:
-                json.dump({"systems": []}, f)
-
-        with open(PERSISTENCE_FILE, "r") as f:
-            current = json.load(f)
-
-        updated_systems = list(
-            filter(lambda x: x["system_id"] != self.system_id, current["systems"])
-        )
-
-        updated_systems.append(serialised_data)
-
-        current["systems"] = updated_systems
-
-        with open(PERSISTENCE_FILE, "w") as f:
-            json.dump(current, f, indent=2)
-
-    @classmethod
-    @use_file_lock
-    def deserialize_systems(cls) -> Iterable["System"]:
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+        if key not in {"periods", "advance", "boost", "program"}:
+            return
         try:
-            with open(PERSISTENCE_FILE, "r") as f:
-                current = json.load(f)
-        except FileNotFoundError:
-            return []
-        for system in current["systems"]:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.attribute_changed())
+        except RuntimeError:
+            pass
+
+    @log_exceptions
+    async def serialize(self):
+        logger.debug(f"Acquiring semaphore {self.system_id}")
+        async with file_semaphore:
+            logger.debug(f"Writing to file {self.system_id}")
+            sensor_dict = self.sensor.dict(exclude_unset=True)
+            relay_dict = self.relay.dict(exclude_unset=True)
+            serialised_data = {
+                "relay": relay_dict,
+                "sensor": sensor_dict,
+                "system_id": self.system_id,
+                "program": self.program,
+                "periods": [p.dict() for p in self.periods],
+                "advance": self.advance,
+                "boost": self.boost,
+            }
+
             try:
-                relay = RelayNode(**system["relay"])
-                sensor = SensorNode(**system["sensor"])
-                advance = system.get("advance")
-                boost = system.get("boost")
-                system = System(
-                    relay=relay,
-                    sensor=sensor,
-                    system_id=system["system_id"],
-                    program=system["program"],
-                    periods=[Period(**p) for p in system["periods"]],
-                    advance=advance,
-                    boost=boost,
-                )
-                yield system
-            except Exception as e:
-                logger.error(e)
-                yield None
+                async with aiofiles.open(PERSISTENCE_FILE, mode="r") as f:
+                    content = await f.read()
+                    current = json.loads(content)
+            except FileNotFoundError:
+                current = {"systems": []}
+
+            updated_systems = list(
+                filter(lambda x: x["system_id"] != self.system_id, current["systems"])
+            )
+
+            updated_systems.append(serialised_data)
+
+            current["systems"] = updated_systems
+
+            async with aiofiles.open(PERSISTENCE_FILE, "w") as f:
+                await f.write(json.dumps(current, indent=2))
+            logger.debug(f"Releasing semaphore {self.system_id}")
+
+    @classmethod
+    async def deserialize_systems(cls) -> AsyncIterable["System"]:
+        async with file_semaphore:
+            try:
+                async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
+                    content = await f.read()
+                    current = json.loads(content)
+            except FileNotFoundError:
+                raise StopAsyncIteration
+            for system in current["systems"]:
+                try:
+                    relay = RelayNode(**system["relay"])
+                    sensor = SensorNode(**system["sensor"])
+                    advance = system.get("advance")
+                    boost = system.get("boost")
+                    system = System(
+                        relay=relay,
+                        sensor=sensor,
+                        system_id=system["system_id"],
+                        program=system["program"],
+                        periods=[Period(**p) for p in system["periods"]],
+                        advance=advance,
+                        boost=boost,
+                    )
+                    yield system
+                except Exception as e:
+                    logger.error(e)
+                    continue
 
     @classmethod
     @log_exceptions
-    def get_by_id(cls, system_id):
-        for system in cls.deserialize_systems():
+    async def get_by_id(cls, system_id):
+        async for system in cls.deserialize_systems():
             if system and system.system_id == system_id:
                 return system

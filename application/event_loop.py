@@ -52,7 +52,6 @@ async def run_check(system: System) -> bool:
         return should_switch_on
     elif system.advance and system.advance <= current_time:
         system.advance = None
-        system.serialize()
 
     if system.boost and system.boost > current_time and temperature < BOOST_THRESHOLD:
         logger.debug("BOOST ON!")
@@ -60,7 +59,6 @@ async def run_check(system: System) -> bool:
         return should_switch_on
     elif system.boost and system.boost <= current_time:
         system.boost = None
-        system.serialize()
 
     if not system.program:
         return should_switch_on
@@ -77,14 +75,8 @@ async def run_check(system: System) -> bool:
         return should_switch_on
 
 
-@log_exceptions
-async def loop_systems():
-    for system in System.deserialize_systems():
-        yield system
-
-
 async def heating_task():
-    async for system in loop_systems():
+    async for system in System.deserialize_systems():
         if not system:
             return
         if await run_check(system) is True:
@@ -95,7 +87,7 @@ async def heating_task():
 
 @log_exceptions
 async def graceful_shutdown():
-    async for system in loop_systems():
+    async for system in System.deserialize_systems():
         if system:
             logger.debug(f"Switching off {system.system_id} relay")
             system.switch_off()
