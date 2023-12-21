@@ -287,32 +287,31 @@ class System(BaseModel):
 
     @classmethod
     async def deserialize_systems(cls) -> AsyncIterable["System"]:
-        async with file_semaphore:
+        try:
+            async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
+                content = await f.read()
+                current = json.loads(content)
+        except FileNotFoundError:
+            raise StopAsyncIteration
+        for system in current["systems"]:
             try:
-                async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
-                    content = await f.read()
-                    current = json.loads(content)
-            except FileNotFoundError:
-                raise StopAsyncIteration
-            for system in current["systems"]:
-                try:
-                    relay = RelayNode(**system["relay"])
-                    sensor = SensorNode(**system["sensor"])
-                    advance = system.get("advance")
-                    boost = system.get("boost")
-                    system = System(
-                        relay=relay,
-                        sensor=sensor,
-                        system_id=system["system_id"],
-                        program=system["program"],
-                        periods=[Period(**p) for p in system["periods"]],
-                        advance=advance,
-                        boost=boost,
-                    )
-                    yield system
-                except Exception as e:
-                    logger.error(e)
-                    continue
+                relay = RelayNode(**system["relay"])
+                sensor = SensorNode(**system["sensor"])
+                advance = system.get("advance")
+                boost = system.get("boost")
+                system = System(
+                    relay=relay,
+                    sensor=sensor,
+                    system_id=system["system_id"],
+                    program=system["program"],
+                    periods=[Period(**p) for p in system["periods"]],
+                    advance=advance,
+                    boost=boost,
+                )
+                yield system
+            except Exception as e:
+                logger.error(e)
+                continue
 
     @classmethod
     @log_exceptions
