@@ -1,16 +1,13 @@
-import asyncio
 import time
-from typing import Callable
 
+from application.event_loop_manager import EventLoopManager
 from data.models import System
 from application.logs import get_logger, log_exceptions
 
-from application.constants import (
-    CHECK_FREQUENCY_SECONDS,
-    THERMOSTAT_THRESHOLD,
-)
+from application.constants import THERMOSTAT_THRESHOLD
 
-GLOBAL_RUN_CONDITION_FLAG = True
+BOOST_THRESHOLD = 26
+
 logger = get_logger(__name__)
 
 
@@ -57,7 +54,7 @@ async def run_check(system: System) -> bool:
         system.advance = None
         system.serialize()
 
-    if system.boost and system.boost > current_time and temperature < 999:
+    if system.boost and system.boost > current_time and temperature < BOOST_THRESHOLD:
         logger.debug("BOOST ON!")
         should_switch_on = True
         return should_switch_on
@@ -86,48 +83,22 @@ async def loop_systems():
         yield system
 
 
-async def event_loop(
-    run_condition: Callable[[], bool],
-    interval=CHECK_FREQUENCY_SECONDS,
-):
-    while run_condition():
-        async for system in loop_systems():
-            try:
-                if await run_check(system) is True:
-                    system.switch_on()
-                else:
-                    system.switch_off()
-            except Exception as e:
-                logger.error(
-                    f"ERROR in system '{system.system_id}': {e.__class__.__name__}: {e}"
-                )
-
-        await asyncio.sleep(interval)
+async def heating_task():
+    async for system in loop_systems():
+        if not system:
+            return
+        if await run_check(system) is True:
+            system.switch_on()
+        else:
+            system.switch_off()
 
 
 @log_exceptions
 async def graceful_shutdown():
-    for system in System.deserialize_systems():
-        logger.debug(f"Switching off {system.system_id} relay")
-        system.switch_off()
+    async for system in loop_systems():
+        if system:
+            logger.debug(f"Switching off {system.system_id} relay")
+            system.switch_off()
 
 
-@log_exceptions
-def run_async_loop(interval_seconds: int = CHECK_FREQUENCY_SECONDS):
-    global GLOBAL_RUN_CONDITION_FLAG
-    GLOBAL_RUN_CONDITION_FLAG = True
-    loop = asyncio.get_running_loop()
-    loop.create_task(
-        event_loop(
-            run_condition=lambda: GLOBAL_RUN_CONDITION_FLAG,
-            interval=interval_seconds,
-        )
-    )
-    logger.info("Loop task created")
-
-
-async def stop_async_loop():
-    global GLOBAL_RUN_CONDITION_FLAG
-    GLOBAL_RUN_CONDITION_FLAG = False
-    await graceful_shutdown()
-    logger.info("Loop task stopped")
+event_loop = EventLoopManager(heating_task, graceful_shutdown)

@@ -4,16 +4,13 @@ from typing import Optional, Union
 
 from pydantic import ValidationError
 
-from application.constants import DEFAULT_MINIMUM_TARGET
+from application.constants import DEFAULT_MINIMUM_TARGET, CHECK_FREQUENCY_SECONDS
 from application.models import SystemUpdate, PeriodsBody, SystemOut, AdvanceBody
 from application.logs import get_logger
 from data.models import System
 from fastapi import APIRouter, HTTPException, Depends
 
-from application.event_loop import (
-    run_async_loop,
-    stop_async_loop,
-)
+from application.event_loop import event_loop as heating_event_loop
 from authentication import get_current_user
 
 router = APIRouter(prefix="/api/v3")
@@ -146,13 +143,13 @@ async def program(system_id: str, on: str):
 
 @router.get("/start_loop/", dependencies=[Depends(get_current_user)])
 async def start():
-    run_async_loop()
+    heating_event_loop.run(CHECK_FREQUENCY_SECONDS)
     return {"detail": "all systems go!"}
 
 
 @router.get("/stop_loop/", dependencies=[Depends(get_current_user)])
 async def stop():
-    await stop_async_loop()
+    await heating_event_loop.stop_and_cleanup()
     return {"detail": "stopped"}
 
 
