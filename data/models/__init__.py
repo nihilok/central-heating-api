@@ -68,7 +68,7 @@ class RelayNode(BaseModel):
     url_on: str
     url_off: str
     url_status: str
-    cached_value: Optional[float] = None
+    cached_value: Optional[bool] = None
     last_updated: float = 0
     expiry_time: int = 10
 
@@ -82,13 +82,16 @@ class RelayNode(BaseModel):
             raise ValueError(f"Invalid direction: {direction}")
 
     @log_exceptions
-    def status(self):
-        if self.cached_value and self.last_updated + self.expiry_time > time.time():
+    def status(self) -> bool:
+        if (
+            self.cached_value is not None
+            and self.last_updated + self.expiry_time > time.time()
+        ):
             return self.cached_value
 
         resp = requests.get(f"{self.url_status}", timeout=5)
 
-        self.cached_value = int(resp.content)
+        self.cached_value = not int(resp.content)
         self.last_updated = time.time()
         return self.cached_value
 
