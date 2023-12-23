@@ -1,7 +1,7 @@
 import time
 
 from application.event_loop_manager import EventLoopManager
-from data.models import System
+from data.models.system import System
 from application.logs import get_logger, log_exceptions
 
 from application.constants import THERMOSTAT_THRESHOLD
@@ -79,9 +79,13 @@ async def heating_task():
     async for system in System.deserialize_systems():
         if not system:
             return
-        if await run_check(system) is True:
-            system.switch_on()
-        else:
+        try:
+            if await run_check(system) is True:
+                system.switch_on()
+            else:
+                system.switch_off()
+        except CommunicationError as e:
+            logger.error(f"{e.__class__.__name__}: {e}")
             system.switch_off()
 
 

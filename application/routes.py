@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from application.constants import DEFAULT_MINIMUM_TARGET, CHECK_FREQUENCY_SECONDS
 from application.models import SystemUpdate, PeriodsBody, SystemOut, AdvanceBody
 from application.logs import get_logger
-from data.models import System
+from data.models.system import System
 from fastapi import APIRouter, HTTPException, Depends
 
 from application.event_loop import event_loop as heating_event_loop

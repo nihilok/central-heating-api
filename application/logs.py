@@ -53,6 +53,8 @@ def log_exceptions(f):
         try:
             return f(*args, **kwargs)
         except Exception as e:
-            logger.error(f"{e.__class__.__name__}: {e}")
+            import traceback
+
+            logger.error(f"{e.__class__.__name__}: {e}\n{traceback.format_exc()}")
 
     return logged_f

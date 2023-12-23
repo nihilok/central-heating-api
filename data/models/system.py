@@ -1,116 +1,79 @@
 import asyncio
-import functools
 import json
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union, Optional, Iterable, AsyncIterable
-from uuid import uuid4
+from typing import Union, Optional, AsyncIterable, Callable
+import time
 
 import aiofiles
-import requests
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from application.constants import DEFAULT_MINIMUM_TARGET
-from application.logs import log_exceptions, get_logger
+from application.logs import get_logger, log_exceptions
+from data.models import SensorNode, RelayNode, Period
 
 DEFAULT_ROOM_TEMP = 22
-
-PERSISTENCE_FILE = Path(os.path.dirname(os.path.abspath(__file__))) / "persistence.json"
-file_lock = False
-
+PERSISTENCE_FILE = (
+    Path(os.path.dirname(os.path.abspath(__file__))).parent / "persistence.json"
+)
 logger = get_logger()
-
-"""
-// EXAMPLE:
-{
-  "systems": [
-    {
-      "system_id": "downstairs",
-      "relay": {
-        "url_on":  "http://192.168.1.115/off?pin=1",
-        "url_off":  "http://192.168.1.115/on?pin=1",
-        "url_status":  "http://192.168.1.115/status?pin=1"
-      },
-      "sensor": {
-        "url": "http://192.168.1.116"
-      },
-      "program": true,
-      "periods": "[[6.0, 22.0, 22.0]]"
-    },
-    {
-      "system_id": "upstairs",
-      "relay": {
-        "url_on":  "http://192.168.1.115/off?pin=2",
-        "url_off":  "http://192.168.1.115/on?pin=2",
-        "url_status":  "http://192.168.1.115/status?pin=2"
-      },
-      "sensor": {
-        "url": "http://192.168.1.109"
-      },
-      "program": true,
-      "periods": "[[3.0, 10.0, 22.0], [18.0, 23.0, 22.0]]"
-    }
-  ]
-}
-"""
-
-
-class SensorNode(BaseModel):
-    url: str
-    adjustment: Optional[float] = None
-
-    @log_exceptions
-    def temperature(self):
-        res = requests.get(self.url, timeout=5).json()
-        temp = float(res["temperature"])
-        if self.adjustment is not None:
-            temp += self.adjustment
-        return float(f"{temp:.1f}")
-
-
-class RelayNode(BaseModel):
-    url_on: str
-    url_off: str
-    url_status: str
-
-    @log_exceptions
-    def switch(self, direction="on"):
-        if direction == "on":
-            requests.get(f"{self.url_on}", timeout=5)
-        elif direction == "off":
-            requests.get(f"{self.url_off}", timeout=5)
-        else:
-            raise ValueError(f"Invalid direction: {direction}")
-
-    @log_exceptions
-    def status(self):
-        resp = requests.get(f"{self.url_status}", timeout=5)
-        return not int(resp.content)
-
-
-class Days(BaseModel):
-    monday: bool = True
-    tuesday: bool = True
-    wednesday: bool = True
-    thursday: bool = True
-    friday: bool = True
-    saturday: bool = True
-    sunday: bool = True
-
-
-default_days = Days()
-
-
-class Period(BaseModel):
-    start: float
-    end: float
-    target: float
-    days: Days = default_days
-    id: str = uuid4().hex
-
-
 file_semaphore = asyncio.Semaphore(1)
+
+
+class CachedProperty:
+    def __init__(self, func, expiry_seconds):
+        self.func = func
+        self.expiry_seconds = expiry_seconds
+        self.value = None
+        self.last_updated = None
+
+    def __repr__(self):
+        return str(self.value)
+
+    def __get__(self, instance, owner):
+        print("\n\n\n\n")
+        print(self.value)
+        if (
+            self.last_updated is None
+            or time.time() - self.last_updated > self.expiry_seconds
+        ):
+            self.value = self.func(instance)
+            print("\n\n\n\n")
+            print(self.value)
+            self.last_updated = time.time()
+        return self.value
+
+    # Implementing the less than comparison
+    def __lt__(self, other):
+        if self.value is None:
+            return False
+        return self.value < other
+
+    def __ge__(self, other):
+        if (
+            self.value is None
+            and other is not None
+            or self.value is not None
+            and other is None
+        ):
+            return False
+        if self.value == other:
+            return True
+
+        return self.value > other
+
+    def __eq__(self, other):
+        if self.value is None and other is not None:
+            return False
+        return self.value == other
+
+
+def cached_property_expiry(expiry_seconds) -> Callable:
+    def decorator(func):
+        return CachedProperty(func, expiry_seconds)
+
+    return decorator
 
 
 class System(BaseModel):
@@ -167,24 +130,28 @@ class System(BaseModel):
             return DEFAULT_MINIMUM_TARGET
         return period.target
 
+    def sorted_periods(self) -> list:
+        return sorted(self.periods, key=lambda p: f"{p.start}-{p.end}")
+
     @property
     def next_target(self):
         check_time = self._decimal_time()
-        check_day = self._the_day_today(plus_days=1)
+        check_day = self._the_day_today()
 
         try:
             period = next(
                 filter(
-                    lambda x: x.end > check_time and x.days.dict()[check_day],
-                    sorted(self.periods, key=lambda p: p.end),
+                    lambda p: p.end > check_time and p.days.dict()[check_day],
+                    self.sorted_periods(),
                 )
             )
         except StopIteration:
+            check_day = self._the_day_today(plus_days=1)
             try:
                 return next(
                     filter(
-                        lambda d: d.days.dict()[check_day],
-                        sorted(self.periods, key=lambda p: p.start),
+                        lambda p: p.days.dict()[check_day],
+                        self.sorted_periods(),
                     )
                 ).target
             except StopIteration:
@@ -205,26 +172,22 @@ class System(BaseModel):
         if period in self.periods:
             return
 
-        for p in self.periods:
+        for period_ in self.periods:
             # Same period
-            if p.start == period.start or p.end == period.end:
-                update = p
+            if period_.start == period_.start and period_.end == period_.end:
+                update = period_
                 break
 
             # Overlapping period
-            elif (p.start < period.end) and (p.end > period.start):
+            elif (period_.start < period_.end) and (period_.end > period_.start):
                 return
         if update:
-            self.periods = list(
-                filter(
-                    lambda x: x.id != update.id,
-                    self.periods,
-                )
-            )
-
-        self.periods.append(period)
-        self.periods.sort(key=lambda x: x.start)
-        self.serialize()
+            new_periods = [p for p in self.periods if p.id != update.id]
+        else:
+            new_periods = self.periods.copy()
+        new_periods.append(period)
+        new_periods.sort(key=lambda p: f"{p.start}-{p.end}")
+        self.periods = new_periods
 
     def check_periods(self, periods_in):
         if (add_remove := len(periods_in) - len(self.periods)) == 0:
