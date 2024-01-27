@@ -49,7 +49,7 @@ class SensorNode(BaseModel):
     last_updated: float = 0
     expiry_time: int = 60
 
-    @log_exceptions
+    @log_exceptions("models.SensorNode")
     def temperature(self):
         if self.cached_value and self.last_updated + self.expiry_time > time.time():
             return self.cached_value
@@ -72,7 +72,7 @@ class RelayNode(BaseModel):
     last_updated: float = 0
     expiry_time: int = 10
 
-    @log_exceptions
+    @log_exceptions("models.RelayNode")
     def switch(self, direction="on"):
         if direction == "on":
             requests.get(f"{self.url_on}", timeout=5)
@@ -81,7 +81,7 @@ class RelayNode(BaseModel):
         else:
             raise ValueError(f"Invalid direction: {direction}")
 
-    @log_exceptions
+    @log_exceptions("models.RelayNode")
     def status(self) -> bool:
         if (
             self.cached_value is not None

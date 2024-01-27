@@ -32,9 +32,9 @@ class CustomFormatter(logging.Formatter):
 
 formatter = CustomFormatter(APP_FORMAT)
 fileHandler = RotatingFileHandler("heating_v3.log", maxBytes=200000, backupCount=3)
+fileHandler.setFormatter(formatter)
 streamHandler = logging.StreamHandler(stream=sys.stdout)
 streamHandler.setFormatter(formatter)
-fileHandler.setFormatter(formatter)
 
 
 def get_logger(name=__name__):
@@ -45,16 +45,35 @@ def get_logger(name=__name__):
     return logger
 
 
-def log_exceptions(f):
-    """All exceptions are logged and wrapped function returns None if an exception is raised."""
-    logger = get_logger(__name__)
+def log_exceptions(arg=None):
+    if callable(arg):
+        # No argument provided, arg is the function to be decorated
+        logger = get_logger(__name__)
 
-    def logged_f(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            import traceback
+        def logged_f(*args, **kwargs):
+            try:
+                return arg(*args, **kwargs)
+            except Exception as e:
+                import traceback
 
-            logger.error(f"{e.__class__.__name__}: {e}\n{traceback.format_exc()}")
+                logger.error(f"{e.__class__.__name__}: {e}\n{traceback.format_exc()}")
 
-    return logged_f
+        return logged_f
+    else:
+        # Argument provided, arg is the name for the logger
+        def real_decorator(f):
+            logger = get_logger(arg)
+
+            def logged_f(*args, **kwargs):
+                try:
+                    return f(*args, **kwargs)
+                except Exception as e:
+                    import traceback
+
+                    logger.error(
+                        f"{e.__class__.__name__}: {e}\n{traceback.format_exc()}"
+                    )
+
+            return logged_f
+
+        return real_decorator

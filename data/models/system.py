@@ -158,15 +158,15 @@ class System(BaseModel):
                 return DEFAULT_ROOM_TEMP
         return period.target
 
-    @log_exceptions
+    @log_exceptions("system")
     def switch_on(self):
         self.relay.switch("on")
 
-    @log_exceptions
+    @log_exceptions("system")
     def switch_off(self):
         self.relay.switch("off")
 
-    @log_exceptions
+    @log_exceptions("system")
     def add_period(self, period: Period):
         update = None
         if period in self.periods:
@@ -212,7 +212,7 @@ class System(BaseModel):
         except RuntimeError:
             pass
 
-    @log_exceptions
+    @log_exceptions("system")
     async def serialize(self):
         logger.debug(f"Acquiring semaphore {self.system_id}")
         async with file_semaphore:
@@ -277,7 +277,7 @@ class System(BaseModel):
                 continue
 
     @classmethod
-    @log_exceptions
+    @log_exceptions("system")
     async def get_by_id(cls, system_id):
         async for system in cls.deserialize_systems():
             if system and system.system_id == system_id:

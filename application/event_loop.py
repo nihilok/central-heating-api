@@ -15,7 +15,7 @@ class CommunicationError(Exception):
     pass
 
 
-@log_exceptions
+@log_exceptions("event_loop")
 async def run_check(system: System) -> bool:
     should_switch_on = False
     logger.debug(f"Running temperature check ({system.system_id})")
@@ -89,7 +89,7 @@ async def heating_task():
             system.switch_off()
 
 
-@log_exceptions
+@log_exceptions("event_loop")
 async def graceful_shutdown():
     async for system in System.deserialize_systems():
         if system:
