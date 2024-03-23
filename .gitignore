@@ -8,3 +8,4 @@ heating_v3.log.3
 heating_v3.log
 /authentication/users.sqlite3
 .idea/
+data/models/__pycache__/

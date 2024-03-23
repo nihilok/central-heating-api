@@ -84,7 +84,7 @@ async def heating_task():
                 system.switch_on()
             else:
                 system.switch_off()
-        except CommunicationError as e:
+        except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
             system.switch_off()
 
