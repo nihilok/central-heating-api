@@ -19,7 +19,7 @@ class CommunicationError(Exception):
 async def run_check(system: System) -> bool:
     should_switch_on = False
     logger.debug(f"Running temperature check ({system.system_id})")
-    temperature, target = system.temperature, system.current_target
+    temperature, target = await system.temperature(), system.current_target
     logger.debug(f"{temperature=} {target=}")
 
     if temperature is None:
@@ -28,7 +28,7 @@ async def run_check(system: System) -> bool:
             f"Temperature reading for system '{system.system_id}' is not available"
         )
 
-    relay_state = system.relay_on
+    relay_state = await system.relay_on()
 
     if relay_state is None:
         # system failed to communicate with relay node.
@@ -78,15 +78,15 @@ async def run_check(system: System) -> bool:
 async def heating_task():
     async for system in System.deserialize_systems():
         if not system:
-            return
+            continue
         try:
             if await run_check(system) is True:
-                system.switch_on()
+                await system.async_switch_on()
             else:
-                system.switch_off()
+                await system.async_switch_off()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
-            system.switch_off()
+            await system.async_switch_off()
 
 
 @log_exceptions("event_loop")
@@ -94,7 +94,7 @@ async def graceful_shutdown():
     async for system in System.deserialize_systems():
         if system:
             logger.debug(f"Switching off {system.system_id} relay")
-            system.switch_off()
+            await system.async_switch_off()
 
 
 event_loop = EventLoopManager(heating_task, graceful_shutdown)

@@ -85,13 +85,11 @@ class System(BaseModel):
     advance: Optional[float] = None
     boost: Optional[float] = None
 
-    @property
-    def temperature(self):
-        return self.sensor.temperature()
+    async def temperature(self):
+        return await self.sensor.temperature()
 
-    @property
-    def relay_on(self):
-        return self.relay.status()
+    async def relay_on(self):
+        return await self.relay.status()
 
     @staticmethod
     def _decimal_time():
@@ -167,6 +165,14 @@ class System(BaseModel):
         self.relay.switch("off")
 
     @log_exceptions("system")
+    async def async_switch_on(self):
+        await self.relay.async_switch("on")
+
+    @log_exceptions("system")
+    async def async_switch_off(self):
+        await self.relay.async_switch("off")
+
+    @log_exceptions("system")
     def add_period(self, period: Period):
         update = None
         if period in self.periods:
@@ -217,14 +223,14 @@ class System(BaseModel):
         logger.debug(f"Acquiring semaphore {self.system_id}")
         async with file_semaphore:
             logger.debug(f"Writing to file {self.system_id}")
-            sensor_dict = self.sensor.dict(exclude_unset=True)
-            relay_dict = self.relay.dict(exclude_unset=True)
+            sensor_dict = self.sensor.model_dump(exclude_unset=True)
+            relay_dict = self.relay.model_dump(exclude_unset=True)
             serialised_data = {
                 "relay": relay_dict,
                 "sensor": sensor_dict,
                 "system_id": self.system_id,
                 "program": self.program,
-                "periods": [p.dict() for p in self.periods],
+                "periods": [p.model_dump() for p in self.periods],
                 "advance": self.advance,
                 "boost": self.boost,
             }

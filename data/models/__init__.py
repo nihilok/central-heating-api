@@ -2,6 +2,7 @@ import time
 from typing import Optional
 from uuid import uuid4
 
+import aiohttp
 import requests
 from pydantic import BaseModel
 
@@ -42,6 +43,20 @@ from application.logs import log_exceptions
 """
 
 
+async def fetch_json(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.ok:
+                return await response.json()
+
+
+async def fetch_text(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.ok:
+                return await response.text()
+
+
 class SensorNode(BaseModel):
     url: str
     adjustment: Optional[float] = None
@@ -50,11 +65,14 @@ class SensorNode(BaseModel):
     expiry_time: int = 60
 
     @log_exceptions("models.SensorNode")
-    def temperature(self):
+    async def temperature(self):
         if self.cached_value and self.last_updated + self.expiry_time > time.time():
             return self.cached_value
 
-        res = requests.get(self.url, timeout=5).json()
+        res = await fetch_json(self.url)
+        if res is None:
+            return self.cached_value
+
         temp = float(res["temperature"])
         if self.adjustment is not None:
             temp += self.adjustment
@@ -71,27 +89,41 @@ class RelayNode(BaseModel):
     cached_value: Optional[bool] = None
     last_updated: float = 0
     expiry_time: int = 10
+    URLS: Optional[dict] = None
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.URLS = {"on": f"{self.url_on}", "off": f"{self.url_off}"}
 
     @log_exceptions("models.RelayNode")
     def switch(self, direction="on"):
-        if direction == "on":
-            requests.get(f"{self.url_on}", timeout=5)
-        elif direction == "off":
-            requests.get(f"{self.url_off}", timeout=5)
-        else:
+        try:
+            url = self.URLS[direction]
+            requests.get(f"{url}", timeout=5)
+        except KeyError:
             raise ValueError(f"Invalid direction: {direction}")
 
     @log_exceptions("models.RelayNode")
-    def status(self) -> bool:
+    async def async_switch(self, direction="off"):
+        try:
+            url = self.URLS[direction]
+            return await self.hit_switch(url)
+        except KeyError:
+            raise ValueError(f"Invalid direction: {direction}")
+
+    @log_exceptions("models.RelayNode")
+    async def status(self) -> Optional[bool]:
         if (
             self.cached_value is not None
             and self.last_updated + self.expiry_time > time.time()
         ):
             return self.cached_value
 
-        resp = requests.get(f"{self.url_status}", timeout=5)
+        resp = await fetch_text(f"{self.url_status}")
+        if resp is None:
+            return self.cached_value
 
-        self.cached_value = not int(resp.content)
+        self.cached_value = not int(resp)
         self.last_updated = time.time()
         return self.cached_value
 
