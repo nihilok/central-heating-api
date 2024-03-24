@@ -105,7 +105,7 @@ class RelayNode(BaseModel):
 
     @log_exceptions("models.RelayNode")
     async def hit_switch(self, url):
-        if not fetch_text(url):
+        if not await fetch_text(url):
             raise ValueError(f"Failed to hit {url}")
 
     @log_exceptions("models.RelayNode")
