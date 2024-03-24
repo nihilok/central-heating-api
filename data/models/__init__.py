@@ -104,6 +104,11 @@ class RelayNode(BaseModel):
             raise ValueError(f"Invalid direction: {direction}")
 
     @log_exceptions("models.RelayNode")
+    async def hit_switch(self, url):
+        if not fetch_text(url):
+            raise ValueError(f"Failed to hit {url}")
+
+    @log_exceptions("models.RelayNode")
     async def async_switch(self, direction="off"):
         try:
             url = self.URLS[direction]
