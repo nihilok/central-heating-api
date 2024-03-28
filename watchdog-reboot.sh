@@ -1,12 +1,26 @@
 #!/bin/bash
 
-URL=$HEATING_URL
-MAX_TIME=5
+set -e
+
+if [ -x "$1" ]; then
+        URL=$URL;
+else
+        URL=$1;
+fi
+
+if [ -z "$URL" ]; then
+        echo "No URL variable found"
+        exit 1
+fi
+
+REQUEST_TIMEOUT=5
 INTERVAL=300
+
+sleep $INTERVAL # Sleep before first check
 
 while true
 do
-    response_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time $MAX_TIME "$URL")
+    response_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time $REQUEST_TIMEOUT "$URL")
 
     if [ "$response_code" -ne 200 ]; then
         echo "Non-200 response code received. Rebooting the machine."
