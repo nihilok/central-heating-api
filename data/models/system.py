@@ -85,8 +85,22 @@ class System(BaseModel):
     advance: Optional[float] = None
     boost: Optional[float] = None
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._temperature = None
+        self._temperature_expiry = None
+        self._expiry_seconds = 120
+
     async def temperature(self):
-        return await self.sensor.temperature()
+        if self._temperature_expiry is not None and self._temperature_expiry > time.time():
+            self._temperature = None
+        if self._temperature is None:
+            return await self.sensor.temperature()
+        return self._temperature
+
+    async def set_temperature(self, temperature: float):
+        self._temperature = temperature
+        self._temperature_expiry = time.time() + self._expiry_seconds
 
     async def relay_on(self):
         return await self.relay.status()
@@ -233,6 +247,8 @@ class System(BaseModel):
                 "periods": [p.model_dump() for p in self.periods],
                 "advance": self.advance,
                 "boost": self.boost,
+                "temperature": self._temperature,
+                "temperature_expiry": self._temperature_expiry
             }
 
             try:
@@ -268,6 +284,8 @@ class System(BaseModel):
                 sensor = SensorNode(**system["sensor"])
                 advance = system.get("advance")
                 boost = system.get("boost")
+                temperature = system.get("temperature")
+                expiry = system.get("expiry")
                 system = System(
                     relay=relay,
                     sensor=sensor,
@@ -277,6 +295,8 @@ class System(BaseModel):
                     advance=advance,
                     boost=boost,
                 )
+                system._temperature = temperature
+                system._temperature_expiry = expiry
                 yield system
             except Exception as e:
                 logger.error(e)
