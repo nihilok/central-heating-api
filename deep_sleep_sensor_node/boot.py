@@ -7,11 +7,10 @@ import wifi
 import gc
 
 __TESTING__ = True  # set this to false when ready to deploy
-DEFAULT_SLEEP_SECS = 60
 
 
 def init_sensor() -> bme280.BME280:
-    i2c = machine.SoftI2C(scl=machine.Pin(39), sda=machine.Pin(42), freq=10000)
+    i2c = machine.SoftI2C(scl=machine.Pin(constants.SCL_PIN), sda=machine.Pin(constants.SDA_PIN), freq=10000)
     bme = bme280.BME280(i2c=i2c)
     return bme
 
@@ -41,7 +40,7 @@ def main():
     wifi.connect_to_wifi_network()
     data = get_data()
     transmit_data(data, constants.RECEIVER_ENDPOINT)
-    deepsleep(DEFAULT_SLEEP_SECS)
+    deepsleep(constants.DEEP_SLEEP_SECS)
 
 
 gc.collect()

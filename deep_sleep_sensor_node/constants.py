@@ -1,3 +1,6 @@
 WIFI_SSID = '<WIFI_SSID>'
 WIFI_PASSWORD = '<PASSWORD>'
 RECEIVER_ENDPOINT = "https://host.receiver.com/endpoint"
+SCL_PIN = 39
+SDA_PIN = 42
+DEEP_SLEEP_SECS = 60
