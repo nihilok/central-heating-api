@@ -1,17 +1,17 @@
-import time
-
 import machine
+import time
 import urequests
 import bme280
 import constants
 import wifi
 import gc
 
+__TESTING__ = True  # set this to false when ready to deploy
 DEFAULT_SLEEP_SECS = 60
 
 
 def init_sensor() -> bme280.BME280:
-    i2c = machine.I2C(scl=machine.Pin(5), sda=machine.Pin(4), freq=10000)
+    i2c = machine.SoftI2C(scl=machine.Pin(39), sda=machine.Pin(42), freq=10000)
     bme = bme280.BME280(i2c=i2c)
     return bme
 
@@ -21,7 +21,7 @@ def deepsleep(sleep_secs) -> None:
     machine.deepsleep(sleep_secs * 1000)
 
 
-def get_data() -> str:
+def get_data() -> dict:
     bme = init_sensor()
     print(bme.temperature)
     if not bme.temperature:
@@ -33,9 +33,8 @@ def get_data() -> str:
     }
 
 
-def transmit_data(data: str, host: str) -> None:
-    url = f"{host}"
-    urequests.post(url, data=data)
+def transmit_data(data: dict, url: str) -> urequests.Response:
+    return urequests.post(url, json=data)
 
 
 def main():
@@ -49,5 +48,14 @@ gc.collect()
 
 
 if __name__ == "__main__":
-    time.sleep(1)
-    main()
+    if __TESTING__:
+        wifi.connect_to_wifi_network()
+        while True:
+            print("Reading data:")
+            print(get_data())
+            print("Making request:")
+            r = transmit_data(get_data(), constants.RECEIVER_ENDPOINT)
+            print(r.text)
+            time.sleep(5)
+    else:
+        main()
