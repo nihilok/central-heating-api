@@ -1,19 +1,18 @@
-import time
-
-import uos, machine, gc
+import machine, gc
 
 gc.collect()
 
 import network
+import constants
 
 sta_if = network.WLAN(network.STA_IF)
 if not sta_if.isconnected():
-    print("\nconnecting to network...")
+    print("\nConnecting to network...")
     sta_if.active(True)
-    sta_if.connect("<WIFI SSID>", "<WIFI PASSWORD>")
+    sta_if.connect(constants.WIFI_SSID, constants.WIFI_PASSWORD)
     while not sta_if.isconnected():
         pass
-print("\nnetwork config:", sta_if.ifconfig())
+print("\nNetwork config:", sta_if.ifconfig())
 
 import json
 from bme280 import BME280
@@ -26,6 +25,9 @@ try:
 except:
     import socket
 
+rtc = machine.RTC()
+rtc.datetime((1971, 1, 1, 0, 0, 0, 0, 0))
+initial_time = rtc.datetime()
 
 def main():
     s = socket.socket()
@@ -39,10 +41,14 @@ def main():
     s.bind(addr)
     s.listen(5)
     print("Listening, connect your browser to http://" + sta_if.ifconfig()[0])
-
     while True:
+        current_time = rtc.datetime()
+        if current_time[3] > initial_time[3] + 1:
+            # reset every 2 hours
+            print("Resetting after time interval (2 hours)")
+            machine.reset()
         cl, addr = s.accept()
-        print("client connected from", addr)
+        print("Client connected from", addr)
         cl_file = cl.makefile("rwb", 0)
         while True:
             line = cl_file.readline()
@@ -64,9 +70,5 @@ try:
     main()
 except KeyboardInterrupt:
     raise KeyboardInterrupt
-except Exception as e:
-    print(e.__class__.__name__)
-    print(e)
-    print("RESETTING MICROCONTROLLER")
-    time.sleep(2)
+except Exception:
     machine.reset()
