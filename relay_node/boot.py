@@ -1,20 +1,11 @@
 import time
-
-try:
-    import usocket as socket
-except:
-    import socket
-
-from machine import Pin
 import network
-
+import gc
 import esp
-
-esp.osdebug(None)
-
+from machine import Pin
 from tcp_listener import HTTPServer
 
-import gc
+esp.osdebug(None)
 
 gc.collect()
 
@@ -30,7 +21,7 @@ station = network.WLAN(network.STA_IF)
 station.active(True)
 station.connect(ssid, password)
 
-while station.isconnected() is False:
+while not station.isconnected():
     pass
 
 print("Connection successful")
