@@ -92,8 +92,9 @@ class System(BaseModel):
         self._expiry_seconds = 120
 
     async def temperature(self):
-        if self._temperature_expiry is not None and self._temperature_expiry > time.time():
+        if self._temperature_expiry is not None and self._temperature_expiry < time.time():
             self._temperature = None
+            await self.serialize()
         if self._temperature is None:
             return await self.sensor.temperature()
         return self._temperature
