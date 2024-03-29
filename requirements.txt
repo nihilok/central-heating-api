@@ -9,3 +9,5 @@ python-jose
 bcrypt
 python-multipart
 aiofiles
+aiohttp
+uvicorn
