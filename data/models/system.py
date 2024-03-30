@@ -100,7 +100,9 @@ class System(BaseModel):
         return self._temperature
 
     async def set_temperature(self, temperature: float):
-        self._temperature = temperature
+        adjustment = self.sensor.adjustment
+        actual = temperature + adjustment
+        self._temperature = float(f"{actual::01d}")
         self._temperature_expiry = time.time() + self._expiry_seconds
 
     async def relay_on(self):
