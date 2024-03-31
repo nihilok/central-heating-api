@@ -164,5 +164,4 @@ async def receive(sensor_id: str, data: dict):
     if isinstance(t, str):
         t = float(t)
     await system.set_temperature(t)
-    await system.serialize()
     return {}

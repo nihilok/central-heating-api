@@ -90,11 +90,11 @@ class System(BaseModel):
         self._temperature = None
         self._temperature_expiry = None
         self._expiry_seconds = 120
+        self._initialized = True
 
     async def temperature(self):
         if self._temperature_expiry is not None and self._temperature_expiry < time.time():
             self._temperature = None
-            await self.serialize()
         if self._temperature is None:
             return await self.sensor.temperature()
         return self._temperature
@@ -227,7 +227,9 @@ class System(BaseModel):
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
-        if key not in {"periods", "advance", "boost", "program"}:
+        if not getattr(self, "_initialized", False):
+            return
+        if key not in {"periods", "advance", "boost", "program", "_temperature"}:
             return
         try:
             loop = asyncio.get_running_loop()
