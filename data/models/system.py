@@ -177,20 +177,12 @@ class System(BaseModel):
         return period.target
 
     @log_exceptions("system")
-    def switch_on(self):
-        self.relay.switch("on")
+    async def switch_on(self):
+        await self.relay.switch("on")
 
     @log_exceptions("system")
-    def switch_off(self):
-        self.relay.switch("off")
-
-    @log_exceptions("system")
-    async def async_switch_on(self):
-        await self.relay.async_switch("on")
-
-    @log_exceptions("system")
-    async def async_switch_off(self):
-        await self.relay.async_switch("off")
+    async def switch_off(self):
+        await self.relay.switch("off")
 
     @log_exceptions("system")
     def add_period(self, period: Period):
@@ -232,13 +224,12 @@ class System(BaseModel):
         super().__setattr__(key, value)
         if not getattr(self, "_initialized", False):
             return
-        if key not in {"periods", "advance", "boost", "program", "_temperature"}:
-            return
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.attribute_changed())
-        except RuntimeError:
-            pass
+        if key in {"periods", "advance", "boost", "program", "_temperature"}:
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self.attribute_changed())
+            except RuntimeError:
+                pass
 
     @log_exceptions("system")
     async def serialize(self):

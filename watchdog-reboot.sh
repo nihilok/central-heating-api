@@ -3,13 +3,14 @@
 set -e
 
 if [ -x "$1" ]; then
-        URL=$URL;
+        URL="$HEALTHCHECK_URL";
 else
         URL=$1;
 fi
 
 if [ -z "$URL" ]; then
-        echo "No URL variable found"
+        echo "Usage: watchdog-reboot.sh <HEALTHCHECK_URL>"
+        echo "or set 'HEALTHCHECK_URL' environment variable"
         exit 1
 fi
 

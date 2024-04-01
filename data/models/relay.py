@@ -23,20 +23,12 @@ class RelayNode(BaseModel):
         self.URLS = {"on": f"{self.url_on}", "off": f"{self.url_off}"}
 
     @log_exceptions("models.RelayNode")
-    def switch(self, direction="on"):
-        try:
-            url = self.URLS[direction]
-            requests.get(f"{url}", timeout=5)
-        except KeyError:
-            raise ValueError(f"Invalid direction: {direction}")
-
-    @log_exceptions("models.RelayNode")
     async def hit_switch(self, url):
         if not await fetch_text(url):
             raise CommunicationError(f"Failed to hit switch at {url}")
 
     @log_exceptions("models.RelayNode")
-    async def async_switch(self, direction="off"):
+    async def switch(self, direction="off"):
         try:
             url = self.URLS[direction]
             return await self.hit_switch(url)

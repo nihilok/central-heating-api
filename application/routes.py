@@ -99,7 +99,7 @@ async def advance(system_id: Union[int, str], body: AdvanceBody):
 async def boost(system_id: Union[int, str], body: AdvanceBody):
     system = await get_system_by_id_or_404(system_id)
     system.boost = body.end_time
-    return SystemOut(**system.dicthost.receiver.com(exclude_unset=True))
+    return SystemOut(**system.dict(exclude_unset=True))
 
 
 @router.post("/cancel_all/{system_id}/")

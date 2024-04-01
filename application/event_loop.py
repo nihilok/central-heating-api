@@ -78,12 +78,12 @@ async def heating_task():
             continue
         try:
             if await run_check(system) is True:
-                await system.async_switch_on()
+                await system.switch_on()
             else:
-                await system.async_switch_off()
+                await system.switch_off()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
-            await system.async_switch_off()
+            await system.switch_off()
 
 
 @log_exceptions("event_loop")
@@ -91,7 +91,7 @@ async def graceful_shutdown():
     async for system in System.deserialize_systems():
         if system:
             logger.debug(f"Switching off {system.system_id} relay")
-            await system.async_switch_off()
+            await system.switch_off()
 
 
 event_loop = EventLoopManager(heating_task, graceful_shutdown)

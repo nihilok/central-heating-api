@@ -45,14 +45,15 @@ def get_logger(name=__name__):
     return logger
 
 
-def log_exceptions(arg=None):
-    if callable(arg):
+def log_exceptions(name=None):
+    if callable(name):
         # No argument provided, arg is the function to be decorated
-        logger = get_logger(__name__)
+        fn = name
+        logger = get_logger(fn.__name__)
 
         def logged_f(*args, **kwargs):
             try:
-                return arg(*args, **kwargs)
+                return fn(*args, **kwargs)
             except Exception as e:
                 import traceback
 
@@ -60,9 +61,9 @@ def log_exceptions(arg=None):
 
         return logged_f
     else:
-        # Argument provided, arg is the name for the logger
+        # Logger name provided
         def real_decorator(f):
-            logger = get_logger(arg)
+            _logger = get_logger(name)
 
             def logged_f(*args, **kwargs):
                 try:
@@ -70,7 +71,7 @@ def log_exceptions(arg=None):
                 except Exception as e:
                     import traceback
 
-                    logger.error(
+                    _logger.error(
                         f"{e.__class__.__name__}: {e}\n{traceback.format_exc()}"
                     )
 
