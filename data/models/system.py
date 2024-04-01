@@ -21,15 +21,6 @@ logger = get_logger()
 file_semaphore = asyncio.Semaphore(1)
 
 
-def debounce(wait):
-    def decorator(func):
-        async def debounced(*args, **kwargs):
-            await asyncio.sleep(wait)
-            await func(*args, **kwargs)
-        return debounced
-    return decorator
-
-
 class CachedProperty:
     def __init__(self, func, expiry_seconds):
         self.func = func
@@ -232,7 +223,6 @@ class System(BaseModel):
         else:
             self.periods = periods_in
 
-    @debounce(0.3)
     async def attribute_changed(self):
         await self.serialize()
 
