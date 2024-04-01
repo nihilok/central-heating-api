@@ -1,18 +1,18 @@
 import machine
 import time
 import urequests
-import bme280
-import constants
-import wifi
+from lib import bme
+from lib import constants
+from lib import wifi
 import gc
 
 __TESTING__ = True  # set this to false when ready to deploy
 
 
-def init_sensor() -> bme280.BME280:
+def init_sensor() -> bme.BME280:
     i2c = machine.SoftI2C(scl=machine.Pin(constants.SCL_PIN), sda=machine.Pin(constants.SDA_PIN), freq=10000)
-    bme = bme280.BME280(i2c=i2c)
-    return bme
+    sensor = bme.BME280(i2c=i2c)
+    return sensor
 
 
 def deepsleep(sleep_secs) -> None:

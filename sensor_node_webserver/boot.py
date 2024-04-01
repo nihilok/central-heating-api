@@ -1,9 +1,18 @@
-import machine, gc
+import machine
+import gc
+import json
+import network
+from lib import constants
+from lib.bme import BME280
+
+try:
+    import usocket as socket
+except ImportError:
+    import socket
+
 
 gc.collect()
 
-import network
-import constants
 
 sta_if = network.WLAN(network.STA_IF)
 if not sta_if.isconnected():
@@ -14,20 +23,15 @@ if not sta_if.isconnected():
         pass
 print("\nNetwork config:", sta_if.ifconfig())
 
-import json
-from bme280 import BME280
 
 i2c = machine.I2C(scl=machine.Pin(5), sda=machine.Pin(4), freq=10000)
 bme = BME280(i2c=i2c)
 
-try:
-    import usocket as socket
-except:
-    import socket
 
 rtc = machine.RTC()
 rtc.datetime((1971, 1, 1, 0, 0, 0, 0, 0))
 initial_time = rtc.datetime()
+
 
 def main():
     s = socket.socket()
