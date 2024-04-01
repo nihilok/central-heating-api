@@ -1,7 +1,6 @@
+import time
 from typing import Optional
 
-import requests
-import time
 from pydantic import BaseModel
 
 from application.logs import log_exceptions

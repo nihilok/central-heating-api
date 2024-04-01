@@ -1,11 +1,11 @@
 import asyncio
 import json
 import os
+import time
 from datetime import datetime, timedelta
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Union, Optional, AsyncIterable, Callable
-import time
+from typing import Union, Optional, AsyncIterable
 
 import aiofiles
 from pydantic import BaseModel
@@ -22,61 +22,6 @@ PERSISTENCE_FILE = (
 )
 logger = get_logger()
 file_semaphore = asyncio.Semaphore(1)
-
-
-class CachedProperty:
-    def __init__(self, func, expiry_seconds):
-        self.func = func
-        self.expiry_seconds = expiry_seconds
-        self.value = None
-        self.last_updated = None
-
-    def __repr__(self):
-        return str(self.value)
-
-    def __get__(self, instance, owner):
-        print("\n\n\n\n")
-        print(self.value)
-        if (
-            self.last_updated is None
-            or time.time() - self.last_updated > self.expiry_seconds
-        ):
-            self.value = self.func(instance)
-            print("\n\n\n\n")
-            print(self.value)
-            self.last_updated = time.time()
-        return self.value
-
-    # Implementing the less than comparison
-    def __lt__(self, other):
-        if self.value is None:
-            return False
-        return self.value < other
-
-    def __ge__(self, other):
-        if (
-            self.value is None
-            and other is not None
-            or self.value is not None
-            and other is None
-        ):
-            return False
-        if self.value == other:
-            return True
-
-        return self.value > other
-
-    def __eq__(self, other):
-        if self.value is None and other is not None:
-            return False
-        return self.value == other
-
-
-def cached_property_expiry(expiry_seconds) -> Callable:
-    def decorator(func):
-        return CachedProperty(func, expiry_seconds)
-
-    return decorator
 
 
 class System(BaseModel):
