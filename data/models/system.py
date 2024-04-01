@@ -11,7 +11,9 @@ from pydantic import BaseModel
 
 from application.constants import DEFAULT_MINIMUM_TARGET
 from application.logs import get_logger, log_exceptions
-from data.models import SensorNode, RelayNode, Period
+from data.models.period import Period
+from data.models.relay import RelayNode
+from data.models.sensor import SensorNode
 
 DEFAULT_ROOM_TEMP = 22
 PERSISTENCE_FILE = (

@@ -5,14 +5,11 @@ from data.models.system import System
 from application.logs import get_logger, log_exceptions
 
 from application.constants import THERMOSTAT_THRESHOLD
+from lib.errors import CommunicationError
 
 BOOST_THRESHOLD = 26
 
 logger = get_logger(__name__)
-
-
-class CommunicationError(Exception):
-    pass
 
 
 @log_exceptions("event_loop")

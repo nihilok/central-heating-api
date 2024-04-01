@@ -3,7 +3,9 @@ from typing import Union, Optional
 
 from pydantic import BaseModel
 
-from data.models import RelayNode, SensorNode, Period
+from data.models.period import Period
+from data.models.relay import RelayNode
+from data.models.sensor import SensorNode
 
 
 class SystemUpdate(BaseModel):

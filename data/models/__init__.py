@@ -1,154 +1,181 @@
-import time
-from typing import Optional
-from uuid import uuid4
-
-import aiohttp
-import requests
-from pydantic import BaseModel
-
-from application.logs import log_exceptions
-
 """
-// EXAMPLE:
+// EXAMPLE persistence.json:
 {
   "systems": [
     {
-      "system_id": "downstairs",
       "relay": {
-        "url_on":  "http://192.168.1.115/off?pin=1",
-        "url_off":  "http://192.168.1.115/on?pin=1",
-        "url_status":  "http://192.168.1.115/status?pin=1"
+        "url_on": "http://192.168.1.1/off?pin=2",
+        "url_off": "http://192.168.1.1/on?pin=2",
+        "url_status": "http://192.168.1.1/status?pin=2",
+        "cached_value": false,
+        "last_updated": 1711959819.9228377,
+        "URLS": {
+          "on": "http://192.168.1.1/off?pin=2",
+          "off": "http://192.168.1.1/on?pin=2"
+        }
       },
       "sensor": {
-        "url": "http://192.168.1.116"
+        "url": "http://192.168.1.209",
+        "adjustment": 2.0,
+        "cached_value": 21.1,
+        "last_updated": 1710486480.7541046
       },
+      "system_id": "upstairs",
       "program": true,
-      "periods": "[[6.0, 22.0, 22.0]]"
+      "periods": [
+        {
+          "start": 7.0,
+          "end": 20.0,
+          "target": 21.0,
+          "days": {
+            "monday": false,
+            "tuesday": false,
+            "wednesday": false,
+            "thursday": false,
+            "friday": false,
+            "saturday": true,
+            "sunday": true
+          },
+          "id": "b156691a-5a54-469b-81fd-e949b6eb415d"
+        },
+        {
+          "start": 7.0,
+          "end": 10.5,
+          "target": 21.0,
+          "days": {
+            "monday": true,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": false,
+            "sunday": false
+          },
+          "id": "99ad598b-2f90-4710-940f-4413e834d876"
+        },
+        {
+          "start": 15.5,
+          "end": 20.5,
+          "target": 21.0,
+          "days": {
+            "monday": true,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": false,
+            "sunday": false
+          },
+          "id": "be716865-b60c-4292-b0e0-58c47d651e09"
+        }
+      ],
+      "advance": null,
+      "boost": null,
+      "temperature": 21.5,
+      "temperature_expiry": null
     },
     {
-      "system_id": "upstairs",
       "relay": {
-        "url_on":  "http://192.168.1.115/off?pin=2",
-        "url_off":  "http://192.168.1.115/on?pin=2",
-        "url_status":  "http://192.168.1.115/status?pin=2"
+        "url_on": "http://192.168.1.1/off?pin=1",
+        "url_off": "http://192.168.1.1/on?pin=1",
+        "url_status": "http://192.168.1.1/status?pin=1",
+        "cached_value": false,
+        "last_updated": 1711962106.450653,
+        "URLS": {
+          "on": "http://192.168.1.1/off?pin=1",
+          "off": "http://192.168.1.1/on?pin=1"
+        }
       },
       "sensor": {
-        "url": "http://192.168.1.109"
+        "url": "http://192.168.1.44",
+        "adjustment": 1.0,
+        "cached_value": 21.5,
+        "last_updated": 1711959811.0714488
       },
+      "system_id": "downstairs",
       "program": true,
-      "periods": "[[3.0, 10.0, 22.0], [18.0, 23.0, 22.0]]"
+      "periods": [
+        {
+          "start": 6.833333333333333,
+          "end": 10.5,
+          "target": 21.0,
+          "days": {
+            "monday": true,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": false,
+            "sunday": false
+          },
+          "id": "920e5942-41fd-4cc4-98af-1f236d35143c"
+        },
+        {
+          "start": 7.0,
+          "end": 10.5,
+          "target": 21.0,
+          "days": {
+            "monday": false,
+            "tuesday": false,
+            "wednesday": false,
+            "thursday": false,
+            "friday": false,
+            "saturday": true,
+            "sunday": true
+          },
+          "id": "53221a47-c823-4edd-83b5-272655e2870a"
+        },
+        {
+          "start": 10.5,
+          "end": 16.0,
+          "target": 20.0,
+          "days": {
+            "monday": false,
+            "tuesday": false,
+            "wednesday": false,
+            "thursday": false,
+            "friday": false,
+            "saturday": true,
+            "sunday": true
+          },
+          "id": "cdee0b55-9cba-4ecf-b4f9-6da9590d67f1"
+        },
+        {
+          "start": 15.5,
+          "end": 21.5,
+          "target": 21.0,
+          "days": {
+            "monday": true,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": false,
+            "sunday": false
+          },
+          "id": "29e6b03a-a7fb-420c-9781-e5847a7a8fd0"
+        },
+        {
+          "start": 16.0,
+          "end": 21.5,
+          "target": 21.0,
+          "days": {
+            "monday": false,
+            "tuesday": false,
+            "wednesday": false,
+            "thursday": false,
+            "friday": false,
+            "saturday": true,
+            "sunday": true
+          },
+          "id": "3f972d5b-11c7-4622-a2f7-cc9fda8334ca"
+        }
+      ],
+      "advance": null,
+      "boost": null,
+      "temperature": null,
+      "temperature_expiry": null
     }
   ]
 }
 """
-
-
-async def fetch_json(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.ok:
-                return await response.json()
-
-
-async def fetch_text(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.ok:
-                return await response.text()
-
-
-class SensorNode(BaseModel):
-    url: str
-    adjustment: Optional[float] = None
-    cached_value: Optional[float] = None
-    last_updated: float = 0
-    expiry_time: int = 60
-
-    @log_exceptions("models.SensorNode")
-    async def temperature(self):
-        if self.cached_value and self.last_updated + self.expiry_time > time.time():
-            return self.cached_value
-
-        res = await fetch_json(self.url)
-        if res is None:
-            return self.cached_value
-
-        temp = float(res["temperature"])
-        if self.adjustment is not None:
-            temp += self.adjustment
-
-        self.cached_value = float(f"{temp:.1f}")
-        self.last_updated = time.time()
-        return self.cached_value
-
-
-class RelayNode(BaseModel):
-    url_on: str
-    url_off: str
-    url_status: str
-    cached_value: Optional[bool] = None
-    last_updated: float = 0
-    expiry_time: int = 10
-    URLS: Optional[dict] = None
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.URLS = {"on": f"{self.url_on}", "off": f"{self.url_off}"}
-
-    @log_exceptions("models.RelayNode")
-    def switch(self, direction="on"):
-        try:
-            url = self.URLS[direction]
-            requests.get(f"{url}", timeout=5)
-        except KeyError:
-            raise ValueError(f"Invalid direction: {direction}")
-
-    @log_exceptions("models.RelayNode")
-    async def hit_switch(self, url):
-        if not await fetch_text(url):
-            raise ValueError(f"Failed to hit {url}")
-
-    @log_exceptions("models.RelayNode")
-    async def async_switch(self, direction="off"):
-        try:
-            url = self.URLS[direction]
-            return await self.hit_switch(url)
-        except KeyError:
-            raise ValueError(f"Invalid direction: {direction}")
-
-    @log_exceptions("models.RelayNode")
-    async def status(self) -> Optional[bool]:
-        if (
-            self.cached_value is not None
-            and self.last_updated + self.expiry_time > time.time()
-        ):
-            return self.cached_value
-
-        resp = await fetch_text(f"{self.url_status}")
-        if resp is None:
-            return self.cached_value
-
-        self.cached_value = not int(resp)
-        self.last_updated = time.time()
-        return self.cached_value
-
-
-class Days(BaseModel):
-    monday: bool = True
-    tuesday: bool = True
-    wednesday: bool = True
-    thursday: bool = True
-    friday: bool = True
-    saturday: bool = True
-    sunday: bool = True
-
-
-default_days = Days()
-
-
-class Period(BaseModel):
-    start: float
-    end: float
-    target: float
-    days: Days = default_days
-    id: str = uuid4().hex
