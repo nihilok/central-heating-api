@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 from datetime import datetime, timedelta
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Union, Optional, AsyncIterable, Callable
 import time
@@ -275,8 +276,12 @@ class System(BaseModel):
             async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
                 content = await f.read()
                 current = json.loads(content)
-        except FileNotFoundError:
-            raise StopAsyncIteration
+        except FileNotFoundError as e:
+            raise StopAsyncIteration from e
+        except JSONDecodeError as e:
+            logger.error(content)
+            logger.error(e)
+            raise StopAsyncIteration from e
         for system in current["systems"]:
             try:
                 relay = RelayNode(**system["relay"])
