@@ -272,16 +272,17 @@ class System(BaseModel):
 
     @classmethod
     async def deserialize_systems(cls) -> AsyncIterable["System"]:
-        try:
-            async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
-                content = await f.read()
-                current = json.loads(content)
-        except FileNotFoundError as e:
-            raise StopAsyncIteration from e
-        except JSONDecodeError as e:
-            logger.error(content)
-            logger.error(e)
-            raise StopAsyncIteration from e
+        async with file_semaphore:
+            try:
+                async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
+                    content = await f.read()
+                    current = json.loads(content)
+            except FileNotFoundError as e:
+                raise StopAsyncIteration from e
+            except JSONDecodeError as e:
+                logger.error(content)
+                logger.error(e)
+                raise StopAsyncIteration from e
         for system in current["systems"]:
             try:
                 relay = RelayNode(**system["relay"])
