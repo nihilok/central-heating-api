@@ -58,6 +58,9 @@ def log_exceptions(name=None):
 
         return logged_f
     else:
+        if name is None:
+            raise ValueError("name cannot be None")
+
         # Logger name provided
         def real_decorator(f):
             _logger = get_logger(name)
