@@ -134,46 +134,11 @@ class System(BaseModel):
 
         return period.target
 
-    @log_exceptions("system")
     async def switch_on(self):
         await self.relay.switch("on")
 
-    @log_exceptions("system")
     async def switch_off(self):
         await self.relay.switch("off")
-
-    @log_exceptions("system")
-    def add_period(self, period: Period):
-        update = None
-        if period in self.periods:
-            return
-
-        for period_ in self.periods:
-            # Same period
-            if period_.start == period_.start and period_.end == period_.end:
-                update = period_
-                break
-
-            # Overlapping period
-            elif (period_.start < period_.end) and (period_.end > period_.start):
-                return
-        if update:
-            new_periods = [p for p in self.periods if p.id != update.id]
-        else:
-            new_periods = self.periods.copy()
-        new_periods.append(period)
-        new_periods.sort(key=lambda p: f"{p.start}-{p.end}")
-        self.periods = new_periods
-
-    def check_periods(self, periods_in):
-        if (add_remove := len(periods_in) - len(self.periods)) == 0:
-            return
-        p1 = set(self.periods)
-        p2 = set(periods_in)
-        if add_remove > 0:
-            self.periods.extend(p1.difference(p2))
-        else:
-            self.periods = periods_in
 
     async def attribute_changed(self):
         await self.serialize()
@@ -233,14 +198,14 @@ class System(BaseModel):
             try:
                 async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
                     content = await f.read()
-                    current = json.loads(content)
+                    conf = json.loads(content)
             except FileNotFoundError as e:
                 raise StopAsyncIteration from e
             except JSONDecodeError as e:
                 logger.error(content)
                 logger.error(e)
                 raise StopAsyncIteration from e
-        for system in current["systems"]:
+        for system in conf["systems"]:
             try:
                 relay = RelayNode(**system["relay"])
                 sensor = SensorNode(**system["sensor"])

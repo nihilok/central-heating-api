@@ -12,7 +12,6 @@ BOOST_THRESHOLD = 26
 logger = get_logger(__name__)
 
 
-@log_exceptions("event_loop.run_check")
 async def run_check(system: System) -> bool:
     should_switch_on = False
     temperature, target = await system.temperature(), system.current_target
@@ -67,19 +66,21 @@ async def run_check(system: System) -> bool:
         return should_switch_on
 
 
-@log_exceptions("event_loop.heating_task")
 async def heating_task():
     async for system in System.deserialize_systems():
         if not system:
             continue
+
         try:
-            if await run_check(system) is True:
-                await system.switch_on()
-            else:
-                await system.switch_off()
-        except Exception:
+            result = await run_check(system)
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            result = False
+
+        if result is True:
+            await system.switch_on()
+        else:
             await system.switch_off()
-            raise
 
 
 @log_exceptions("event_loop.graceful_shutdown")
