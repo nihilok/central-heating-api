@@ -33,10 +33,6 @@ async def run_check(system: System) -> bool:
 
     current_time = time.time()
 
-    logger.debug(f"{current_time=} - {system.advance=} - {system.next_target=}")
-    logger.debug(f"time: {system.advance and system.advance > current_time}")
-    logger.debug(f"temp: {temperature < system.next_target}")
-
     if (
         system.advance
         and system.advance > current_time

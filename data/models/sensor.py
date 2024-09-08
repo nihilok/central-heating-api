@@ -21,7 +21,7 @@ class SensorNode(BaseModel):
 
         res = await fetch_json(self.url)
         if res is None:
-            return self.cached_value
+            return None
 
         temp = float(res["temperature"])
         if self.adjustment is not None:

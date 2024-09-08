@@ -20,7 +20,7 @@ DEFAULT_ROOM_TEMP = 22
 PERSISTENCE_FILE = (
     Path(os.path.dirname(os.path.abspath(__file__))).parent / "persistence.json"
 )
-logger = get_logger()
+logger = get_logger(__name__)
 file_semaphore = asyncio.Semaphore(1)
 
 
