@@ -16,7 +16,7 @@ class EmptyResponse:
         return None
 
 
-async def send_request(url) -> AsyncGenerator[Union[ClientResponse, EmptyResponse]]:
+async def send_request(url) -> AsyncGenerator:
     result = EmptyResponse
     try:
         async with aiohttp.ClientSession() as session:
