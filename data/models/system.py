@@ -58,7 +58,7 @@ class System(BaseModel):
                 self.error_count += 1
                 if self.error_count >= self.max_error_count:
                     logger.warning(
-                        "Disabling system {self.system_id} after {self.error_count} errors getting temperature"
+                        f"Disabling system {self.system_id} after {self.error_count} errors getting temperature"
                     )
                     self.disabled = True
         return self._temperature
