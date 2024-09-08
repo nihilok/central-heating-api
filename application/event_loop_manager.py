@@ -14,6 +14,7 @@ class EventLoopManager:
         cleanup_function: Callable,
         use_signals: bool = False,
         auto_restart: bool = True,
+        max_retries: int = 3,
     ):
         self._event_loop_coroutine = event_loop_coroutine
         self._cleanup_function = cleanup_function
@@ -21,22 +22,28 @@ class EventLoopManager:
         self._clean_up_triggered = False
         self._use_signals = use_signals
         self._auto_restart = auto_restart
+        self.retries = 0
+        self.max_retries = max_retries
 
     async def event_loop(self, interval: int):
         try:
             while self._should_run:
                 await self._event_loop_coroutine()
                 await asyncio.sleep(interval)
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            if not self._auto_restart:
-                raise
-            logger.warning("Error in event loop; restarting task...")
+                self.retries = 0
+        except Exception as e1:
+            logger.error(e1, exc_info=True)
             try:
                 await self._cleanup()
-            except Exception as e:
-                logger.error(f"Cleanup on auto-restart failed: {e}", exc_info=True)
+            except Exception as e2:
+                logger.error(f"Cleanup on error failed: {e2}", exc_info=True)
+            if not self._auto_restart or self.retries >= self.max_retries:
+                raise e1
+            self.retries += 1
             if self._should_run:
+                logger.warning(
+                    f"Attempting to restart task ({self.retries} of {self.max_retries} times)..."
+                )
                 return await self.event_loop(interval)
 
     def stop(self):
