@@ -3,8 +3,10 @@ import os
 import sys
 from logging.handlers import RotatingFileHandler
 
-UVI_FORMAT = "%(levelprefix)s %(asctime)s - %(message)s"
-APP_FORMAT = "%(levelname)s %(asctime)s - %(message)s"
+from main import CustomFormatter
+
+UVI_FORMAT = "%(levelprefix)s %(asctime)s [%(name)s] - %(message)s"
+APP_FORMAT = "%(levelname)s %(asctime)s [%(name)s] - %(message)s"
 
 
 class CustomFormatter(logging.Formatter):
@@ -49,15 +51,13 @@ def log_exceptions(name=None):
     if callable(name):
         # No argument provided, arg is the function to be decorated
         fn = name
-        logger = get_logger(fn.__name__)
+        _logger = get_logger(fn.__name__)
 
         def logged_f(*args, **kwargs):
             try:
                 return fn(*args, **kwargs)
             except Exception as e:
-                import traceback
-
-                logger.error(f"{e.__class__.__name__}: {e}\n{traceback.format_exc()}")
+                _logger.error(f"{e.__class__.__name__}: {e}", exc_info=True)
 
         return logged_f
     else:
@@ -69,12 +69,37 @@ def log_exceptions(name=None):
                 try:
                     return f(*args, **kwargs)
                 except Exception as e:
-                    import traceback
-
-                    _logger.error(
-                        f"{e.__class__.__name__}: {e}\n{traceback.format_exc()}"
-                    )
+                    _logger.error(f"{e.__class__.__name__}: {e}", exc_info=True)
 
             return logged_f
 
         return real_decorator
+
+
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": CustomFormatter,
+            "fmt": UVI_FORMAT,
+            "datefmt": "%Y-%m-%d %H:%M:%S.%f",
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "loggers": {
+        "uvicorn": {"handlers": ["default"], "level": "INFO"},
+        "uvicorn.error": {"level": "INFO"},
+        "uvicorn.access": {
+            "handlers": ["default"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
