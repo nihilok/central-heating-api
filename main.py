@@ -1,24 +1,8 @@
 import sys
-from datetime import datetime
 
 import uvicorn
 
-from application.logs import LOGGING_CONFIG
-
-from uvicorn.logging import DefaultFormatter
-
-
-class CustomFormatter(DefaultFormatter):
-    def formatTime(self, record, datefmt=None):
-        ct = datetime.fromtimestamp(record.created)
-        if datefmt:
-            s = ct.strftime(datefmt)
-            return s[:-3]  # Truncate microseconds to milliseconds
-        else:
-            t = ct.strftime(self.default_time_format)
-            s = self.default_msec_format % (t, record.msecs)
-            return s
-
+from application.config.logging import LOGGING_CONFIG
 
 if __name__ == "__main__":
 

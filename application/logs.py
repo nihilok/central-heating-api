@@ -3,13 +3,10 @@ import os
 import sys
 from logging.handlers import RotatingFileHandler
 
-from main import CustomFormatter
-
-UVI_FORMAT = "%(levelprefix)s %(asctime)s [%(name)s] - %(message)s"
-APP_FORMAT = "%(levelname)s %(asctime)s [%(name)s] - %(message)s"
+from application.config.logging import APP_FORMAT
 
 
-class CustomFormatter(logging.Formatter):
+class ConsistentLevelNamePrefixFormatter(logging.Formatter):
     levelname_to_prefix = {
         "DEBUG": "DEBUG:   ",
         "INFO": "INFO:    ",
@@ -32,7 +29,7 @@ class CustomFormatter(logging.Formatter):
         return formatted_message
 
 
-formatter = CustomFormatter(APP_FORMAT)
+formatter = ConsistentLevelNamePrefixFormatter(APP_FORMAT)
 fileHandler = RotatingFileHandler("heating_v3.log", maxBytes=2000000, backupCount=3)
 fileHandler.setFormatter(formatter)
 streamHandler = logging.StreamHandler(stream=sys.stdout)
@@ -74,32 +71,3 @@ def log_exceptions(name=None):
             return logged_f
 
         return real_decorator
-
-
-LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "default": {
-            "()": CustomFormatter,
-            "fmt": UVI_FORMAT,
-            "datefmt": "%Y-%m-%d %H:%M:%S.%f",
-        },
-    },
-    "handlers": {
-        "default": {
-            "formatter": "default",
-            "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
-        },
-    },
-    "loggers": {
-        "uvicorn": {"handlers": ["default"], "level": "INFO"},
-        "uvicorn.error": {"level": "INFO"},
-        "uvicorn.access": {
-            "handlers": ["default"],
-            "level": "INFO",
-            "propagate": False,
-        },
-    },
-}
