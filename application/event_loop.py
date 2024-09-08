@@ -12,6 +12,7 @@ BOOST_THRESHOLD = 26
 logger = get_logger(__name__)
 
 
+@log_exceptions("event_loop.run_check")
 async def run_check(system: System) -> bool:
     should_switch_on = False
     temperature, target = await system.temperature(), system.current_target
