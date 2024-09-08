@@ -42,10 +42,16 @@ class System(BaseModel):
         self._updating = False
 
     async def temperature(self):
-        if self._temperature_expiry is not None and self._temperature_expiry < time.time():
+        if (
+            self._temperature_expiry is not None
+            and self._temperature_expiry < time.time()
+        ):
+            logger.debug(f"Clearing cached temperature for {self.system_id}")
             self._temperature = None
         if self._temperature is None:
+            logger.debug(f"Getting temperature for {self.system_id} from sensor")
             return await self.sensor.temperature()
+        logger.debug(f"Returning cached temperature for {self.system_id}")
         return self._temperature
 
     async def set_temperature(self, temperature: float):
@@ -72,9 +78,12 @@ class System(BaseModel):
 
     @property
     def current_target(self):
+        logger.debug(f"Getting current target for {self.system_id}")
         if self.boost:
+            logger.debug(f"Boost enabled for {self.system_id}")
             return 999
         if self.advance:
+            logger.debug(f"Advance enabled for {self.system_id}")
             return self.next_target
 
         if not self.program:
@@ -99,27 +108,30 @@ class System(BaseModel):
 
     @property
     def next_target(self):
+        logger.debug(f"Getting next target for {self.system_id}")
         check_time = self._decimal_time()
         check_day = self._the_day_today()
 
-        try:
+        period = next(
+            filter(
+                lambda p: p.end > check_time and p.days.dict()[check_day],
+                self.sorted_periods(),
+            ),
+            None,
+        )
+
+        if period is None:
+            check_day = self._the_day_today(plus_days=1)
+
             period = next(
                 filter(
-                    lambda p: p.end > check_time and p.days.dict()[check_day],
+                    lambda p: p.days.dict()[check_day],
                     self.sorted_periods(),
                 )
             )
-        except StopIteration:
-            check_day = self._the_day_today(plus_days=1)
-            try:
-                return next(
-                    filter(
-                        lambda p: p.days.dict()[check_day],
-                        self.sorted_periods(),
-                    )
-                ).target
-            except StopIteration:
+            if period is None:
                 return DEFAULT_ROOM_TEMP
+
         return period.target
 
     @log_exceptions("system")
@@ -193,7 +205,7 @@ class System(BaseModel):
                 "advance": self.advance,
                 "boost": self.boost,
                 "temperature": self._temperature,
-                "temperature_expiry": self._temperature_expiry
+                "temperature_expiry": self._temperature_expiry,
             }
 
             try:

@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 async def run_check(system: System) -> bool:
     should_switch_on = False
     temperature, target = await system.temperature(), system.current_target
-    logger.info(f"Running check for {system.system_id=} with {temperature=} {target=}")
+    logger.debug(f"Running check for {system.system_id=} with {temperature=} {target=}")
 
     if temperature is None:
         # system failed to communicate with temperature node.

@@ -31,7 +31,7 @@ class CustomFormatter(logging.Formatter):
 
 
 formatter = CustomFormatter(APP_FORMAT)
-fileHandler = RotatingFileHandler("heating_v3.log", maxBytes=200000, backupCount=3)
+fileHandler = RotatingFileHandler("heating_v3.log", maxBytes=2000000, backupCount=3)
 fileHandler.setFormatter(formatter)
 streamHandler = logging.StreamHandler(stream=sys.stdout)
 streamHandler.setFormatter(formatter)
