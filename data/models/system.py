@@ -243,6 +243,7 @@ class System(BaseModel):
                     periods=[Period(**p) for p in system["periods"]],
                     advance=advance,
                     boost=boost,
+                    error_count=system["error_count"],
                 )
                 system._temperature = temperature
                 system._temperature_expiry = expiry
