@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, AsyncGenerator
 
 import aiohttp
 from aiohttp import ClientConnectionError, ClientResponse
@@ -16,23 +16,25 @@ class EmptyResponse:
         return None
 
 
-async def send_request(url) -> Union[ClientResponse, EmptyResponse]:
+async def send_request(url) -> AsyncGenerator[Union[ClientResponse, EmptyResponse]]:
     result = EmptyResponse
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if response.ok:
-                    result = response
+                    yield response
 
     except ClientConnectionError as e:
         get_logger(__name__).error(e)
 
-    return result
+    yield result
 
 
 async def fetch_json(url) -> Optional[dict]:
-    return await (await send_request(url)).json()
+    async for response in send_request(url):
+        return await response.json()
 
 
 async def fetch_text(url) -> Optional[str]:
-    return await (await send_request(url)).text()
+    async for response in send_request(url):
+        return await response.text()
