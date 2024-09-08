@@ -31,7 +31,7 @@ class EventLoopManager:
             logger.error(e, exc_info=True)
             if not self._auto_restart:
                 raise
-
+            logger.warning("Error in event loop; restarting task...")
             try:
                 await self._cleanup()
             except Exception as e:
@@ -55,6 +55,7 @@ class EventLoopManager:
     async def _cleanup(self):
         if self._clean_up_triggered:
             return
+        logger.info("Running cleanup task...")
         self._clean_up_triggered = True
         await self._cleanup_function()
 
