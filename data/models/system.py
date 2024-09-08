@@ -32,6 +32,9 @@ class System(BaseModel):
     periods: list[Period] = []
     advance: Optional[float] = None
     boost: Optional[float] = None
+    disabled: bool = False
+    error_count: int = 0
+    max_error_count: int = 5
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -50,8 +53,11 @@ class System(BaseModel):
             self._temperature = None
         if self._temperature is None:
             logger.debug(f"Getting temperature for {self.system_id} from sensor")
-            return await self.sensor.temperature()
-        logger.debug(f"Returning cached temperature for {self.system_id}")
+            self._temperature = await self.sensor.temperature()
+            if self._temperature is None:
+                self.error_count += 1
+                if self.error_count >= self.max_error_count:
+                    self.disabled = True
         return self._temperature
 
     async def set_temperature(self, temperature: float):
@@ -147,7 +153,15 @@ class System(BaseModel):
         super().__setattr__(key, value)
         if not getattr(self, "_initialized", False):
             return
-        if key in {"periods", "advance", "boost", "program", "_temperature"}:
+        if key in {
+            "periods",
+            "advance",
+            "boost",
+            "program",
+            "_temperature",
+            "error_count",
+            "disabled",
+        }:
             try:
                 loop = asyncio.get_running_loop()
                 loop.create_task(self.attribute_changed())
@@ -171,6 +185,8 @@ class System(BaseModel):
                 "boost": self.boost,
                 "temperature": self._temperature,
                 "temperature_expiry": self._temperature_expiry,
+                "disabled": self.disabled,
+                "error_count": self.error_count,
             }
 
             try:
@@ -206,6 +222,9 @@ class System(BaseModel):
                 logger.error(e)
                 raise StopAsyncIteration from e
         for system in conf["systems"]:
+            if system.get("disabled", False):
+                logger.debug(f"System: {system['system_id']} is disabled")
+                continue
             try:
                 relay = RelayNode(**system["relay"])
                 sensor = SensorNode(**system["sensor"])
@@ -213,7 +232,7 @@ class System(BaseModel):
                 boost = system.get("boost")
                 temperature = system.get("temperature")
                 expiry = system.get("expiry")
-                system = System(
+                system = cls(
                     relay=relay,
                     sensor=sensor,
                     system_id=system["system_id"],
