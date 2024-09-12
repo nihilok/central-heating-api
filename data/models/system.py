@@ -53,7 +53,7 @@ class System(BaseModel):
             self._temperature = None
         if self._temperature is None:
             logger.debug(f"Getting temperature for {self.system_id} from sensor")
-            self._temperature = await self.sensor.temperature()
+            self._temperature, last_updated = await self.sensor.temperature()
             if self._temperature is None:
                 self.error_count += 1
                 if self.error_count >= self.max_error_count:
@@ -61,6 +61,9 @@ class System(BaseModel):
                         f"Disabling system {self.system_id} after {self.error_count} errors getting temperature"
                     )
                     self.disabled = True
+            if last_updated:
+                self._temperature_expiry = last_updated + self._expiry_seconds
+
         return self._temperature
 
     async def set_temperature(self, temperature: float):
