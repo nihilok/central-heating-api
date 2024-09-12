@@ -232,7 +232,7 @@ class System(BaseModel):
             try:
                 relay = RelayNode(**system["relay"])
                 sensor = SensorNode(**system["sensor"])
-                system = cls(
+                system_obj = cls(
                     relay=relay,
                     sensor=sensor,
                     system_id=system["system_id"],
@@ -247,7 +247,7 @@ class System(BaseModel):
 
                 temperature = system.get("temperature")
                 system._temperature = temperature
-                yield system
+                yield system_obj
             except Exception as e:
                 logger.error(e)
                 continue
