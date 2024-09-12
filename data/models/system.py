@@ -246,7 +246,7 @@ class System(BaseModel):
                 )
 
                 temperature = system.get("temperature")
-                system._temperature = temperature
+                system_obj._temperature = temperature
                 yield system_obj
             except Exception as e:
                 logger.error(e)
