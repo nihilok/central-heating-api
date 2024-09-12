@@ -45,7 +45,7 @@ class System(BaseModel):
         self._updating = False
 
     async def temperature(self):
-        if self.temperature_expiry is None or self.temperature_expiry < time.time():
+        if self.temperature_expiry is None or self.temperature_expiry > time.time():
             logger.debug(f"Clearing cached temperature for {self.system_id}")
             self._temperature = None
         if self._temperature is None:
