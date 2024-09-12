@@ -241,7 +241,7 @@ class System(BaseModel):
                     advance=system.get("advance"),
                     boost=system.get("boost"),
                     error_count=system["error_count"],
-                    temperature_expiry=system.get("expiry"),
+                    temperature_expiry=system.get("temperature_expiry"),
                     expiry_seconds=system.get("expiry_seconds", 10),
                 )
 
