@@ -35,17 +35,17 @@ class System(BaseModel):
     disabled: bool = False
     error_count: int = 0
     max_error_count: int = 5
+    temperature_expiry: Optional[float] = None
+    expiry_seconds: int = 10
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._temperature = None
-        self._temperature_expiry = None
-        self._expiry_seconds = 120
         self._initialized = True
         self._updating = False
 
     async def temperature(self):
-        if self._temperature_expiry is None or self._temperature_expiry < time.time():
+        if self._temperature_expiry is None or self.temperature_expiry < time.time():
             logger.debug(f"Clearing cached temperature for {self.system_id}")
             self._temperature = None
         if self._temperature is None:
@@ -59,7 +59,7 @@ class System(BaseModel):
                     )
                     self.disabled = True
             if last_updated:
-                self._temperature_expiry = last_updated + self._expiry_seconds
+                self.temperature_expiry = last_updated + self.expiry_seconds
 
         return self._temperature
 
@@ -67,7 +67,7 @@ class System(BaseModel):
         adjustment = self.sensor.adjustment or 0
         actual = temperature + adjustment
         self._temperature = float(f"{actual:.1f}")
-        self._temperature_expiry = time.time() + self._expiry_seconds
+        self.temperature_expiry = time.time() + self.expiry_seconds
 
     async def relay_on(self):
         return await self.relay.status()
@@ -187,9 +187,10 @@ class System(BaseModel):
                 "advance": self.advance,
                 "boost": self.boost,
                 "temperature": self._temperature,
-                "temperature_expiry": self._temperature_expiry,
+                "temperature_expiry": self.temperature_expiry,
                 "disabled": self.disabled,
                 "error_count": self.error_count,
+                "expiry_seconds": self.expiry_seconds,
             }
 
             try:
@@ -231,22 +232,21 @@ class System(BaseModel):
             try:
                 relay = RelayNode(**system["relay"])
                 sensor = SensorNode(**system["sensor"])
-                advance = system.get("advance")
-                boost = system.get("boost")
-                temperature = system.get("temperature")
-                expiry = system.get("expiry")
                 system = cls(
                     relay=relay,
                     sensor=sensor,
                     system_id=system["system_id"],
                     program=system["program"],
                     periods=[Period(**p) for p in system["periods"]],
-                    advance=advance,
-                    boost=boost,
+                    advance=system.get("advance"),
+                    boost=system.get("boost"),
                     error_count=system["error_count"],
+                    temperature_expiry=system.get("expiry"),
+                    expiry_seconds=system.get("expiry_seconds", 10),
                 )
+
+                temperature = system.get("temperature")
                 system._temperature = temperature
-                system._temperature_expiry = expiry
                 yield system
             except Exception as e:
                 logger.error(e)
