@@ -69,7 +69,8 @@ class System(BaseModel):
             self._temperature = None
 
         if self._temperature is None:
-            asyncio.ensure_future(self.assign_temperature_async())
+            future = asyncio.ensure_future(self.assign_temperature_async())
+            self._temperature = future.result()
 
         return self._temperature
 
