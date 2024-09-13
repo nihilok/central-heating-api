@@ -36,7 +36,7 @@ class System(BaseModel):
     error_count: int = 0
     max_error_count: int = 5
     temperature_expiry: Optional[float] = None
-    expiry_seconds: int = 10
+    expiry_seconds: int = 20
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -45,7 +45,7 @@ class System(BaseModel):
         self._updating = False
 
     async def temperature(self):
-        if self.temperature_expiry is None or self.temperature_expiry > time.time():
+        if self.temperature_expiry is None or self.temperature_expiry <= time.time():
             logger.debug(f"Clearing cached temperature for {self.system_id}")
             self._temperature = None
         if self._temperature is None:
@@ -241,13 +241,17 @@ class System(BaseModel):
                     advance=system.get("advance"),
                     boost=system.get("boost"),
                     error_count=system["error_count"],
-                    temperature_expiry=system.get("temperature_expiry"),
-                    expiry_seconds=system.get("expiry_seconds", 10),
+                    expiry_seconds=system.get("expiry_seconds", 20),
                 )
 
+                temperature_expiry = system.get("expiry_seconds", 20)
                 temperature = system.get("temperature")
-                system_obj._temperature = temperature
+                if temperature and temperature_expiry:
+                    system_obj._temperature = temperature
+                    system_obj.temperature_expiry = temperature_expiry
+
                 yield system_obj
+
             except Exception as e:
                 logger.error(e)
                 continue
