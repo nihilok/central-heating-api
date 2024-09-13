@@ -56,6 +56,9 @@ class System(BaseModel):
                 self.disabled = True
         return new_temperature
 
+    async def assign_temperature_async(self):
+        self._temperature = await self.get_temperature()
+
     @property
     def temperature(self):
         if (
@@ -66,8 +69,7 @@ class System(BaseModel):
             self._temperature = None
 
         if self._temperature is None:
-            loop = asyncio.get_running_loop()
-            self._temperature = loop.run_until_complete(self.get_temperature())
+            asyncio.ensure_future(self.assign_temperature_async())
 
         return self._temperature
 
