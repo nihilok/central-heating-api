@@ -13,10 +13,14 @@ class SensorNode(BaseModel):
     adjustment: Optional[float] = None
 
     @log_exceptions("models.SensorNode")
-    async def temperature(self) -> float:
+    async def temperature(self) -> Optional[float]:
         res = await fetch_json(self.url)
 
+        if res is None:
+            return None
+
         temp = float(res["temperature"])
+
         if self.adjustment is not None:
             temp += self.adjustment
 
