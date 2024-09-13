@@ -56,11 +56,7 @@ class System(BaseModel):
                 self.disabled = True
         return new_temperature
 
-    async def assign_temperature_async(self):
-        self._temperature = await self.get_temperature()
-
-    @property
-    def temperature(self):
+    async def temperature(self):
         if (
             self._temperature
             and self.temperature_expiry
@@ -69,8 +65,7 @@ class System(BaseModel):
             self._temperature = None
 
         if self._temperature is None:
-            future = asyncio.ensure_future(self.assign_temperature_async())
-            self._temperature = future.result()
+            self._temperature = await self.get_temperature()
 
         return self._temperature
 
@@ -197,7 +192,7 @@ class System(BaseModel):
                 "periods": [p.model_dump() for p in self.periods],
                 "advance": self.advance,
                 "boost": self.boost,
-                "temperature": self.temperature,
+                "temperature": await self.temperature(),
                 "temperature_expiry": self.temperature_expiry,
                 "disabled": self.disabled,
                 "error_count": self.error_count,

@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 async def run_check(system: System) -> bool:
     should_switch_on = False
-    temperature, target = system.temperature, system.current_target
+    temperature, target = await system.temperature(), system.current_target
     logger.debug(f"Running check for {system.system_id=} with {temperature=} {target=}")
 
     if temperature is None:

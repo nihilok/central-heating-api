@@ -69,7 +69,7 @@ async def new_or_update_system(system_update: SystemUpdate):
 @router.get("/temperature/{system_id}/")
 async def temperature(system_id: Union[int, str]):
     system = await get_system_by_id_or_404(system_id)
-    return {"temperature": system.temperature}
+    return {"temperature": await system.temperature()}
 
 
 @router.get("/target/{system_id}/")
@@ -120,7 +120,7 @@ async def get_all_data():
         data.append(
             {
                 "id": system.system_id,
-                "temperature": system.temperature,
+                "temperature": await system.temperature(),
                 "target": system.current_target,
                 "relay_on": await system.relay_on(),
             }
