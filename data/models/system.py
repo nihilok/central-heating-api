@@ -44,22 +44,30 @@ class System(BaseModel):
         self._initialized = True
         self._updating = False
 
-    async def temperature(self):
-        if self.temperature_expiry is None or self.temperature_expiry <= time.time():
-            logger.debug(f"Clearing cached temperature for {self.system_id}")
+    async def get_temperature(self):
+        logger.debug(f"Getting temperature for {self.system_id} from sensor")
+        new_temperature = await self.sensor.temperature()
+        if new_temperature is None:
+            self.error_count += 1
+            if self.error_count >= self.max_error_count:
+                logger.warning(
+                    f"Disabling system {self.system_id} after {self.error_count} errors getting temperature"
+                )
+                self.disabled = True
+        return new_temperature
+
+    @property
+    def temperature(self):
+        if (
+            self._temperature
+            and self.temperature_expiry
+            and self.temperature_expiry <= time.time()
+        ):
             self._temperature = None
+
         if self._temperature is None:
-            logger.debug(f"Getting temperature for {self.system_id} from sensor")
-            self._temperature, last_updated = await self.sensor.temperature()
-            if self._temperature is None:
-                self.error_count += 1
-                if self.error_count >= self.max_error_count:
-                    logger.warning(
-                        f"Disabling system {self.system_id} after {self.error_count} errors getting temperature"
-                    )
-                    self.disabled = True
-            if last_updated:
-                self.temperature_expiry = last_updated + self.expiry_seconds
+            loop = asyncio.get_running_loop()
+            self._temperature = loop.run_until_complete(self.get_temperature())
 
         return self._temperature
 
@@ -186,7 +194,7 @@ class System(BaseModel):
                 "periods": [p.model_dump() for p in self.periods],
                 "advance": self.advance,
                 "boost": self.boost,
-                "temperature": self._temperature,
+                "temperature": self.temperature,
                 "temperature_expiry": self.temperature_expiry,
                 "disabled": self.disabled,
                 "error_count": self.error_count,
@@ -246,6 +254,7 @@ class System(BaseModel):
 
                 temperature_expiry = system.get("expiry_seconds", 20)
                 temperature = system.get("temperature")
+
                 if temperature and temperature_expiry:
                     system_obj._temperature = temperature
                     system_obj.temperature_expiry = temperature_expiry
