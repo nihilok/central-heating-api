@@ -1,7 +1,7 @@
 import time
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from application.logs import log_exceptions
 from lib.errors import CommunicationError
@@ -9,6 +9,7 @@ from lib.funcs import fetch_text
 
 
 class RelayNode(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     url_on: str
     url_off: str
     url_status: str

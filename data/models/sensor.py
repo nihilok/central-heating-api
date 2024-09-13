@@ -1,13 +1,14 @@
 from typing import Optional
 
 import time
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from application.logs import log_exceptions
 from lib.funcs import fetch_json
 
 
 class SensorNode(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     url: str
     adjustment: Optional[float] = None
 
