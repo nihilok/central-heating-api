@@ -41,11 +41,13 @@ class System(BaseModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._temperature = None
-        self._initialized = True
+        self._initialized = False
         self._updating = False
 
     async def get_temperature(self):
-        logger.debug(f"Getting temperature for {self.system_id} from sensor")
+        logger.debug(
+            f"Getting temperature for {self.system_id} from sensor ({self.error_count + 1} of {self.max_error_count} retries)"
+        )
         new_temperature = await self.sensor.temperature()
         if new_temperature is None:
             self.error_count += 1
@@ -54,6 +56,11 @@ class System(BaseModel):
                     f"Disabling system {self.system_id} after {self.error_count} errors getting temperature"
                 )
                 self.disabled = True
+                await self.attribute_changed()
+                return None
+            await asyncio.sleep(5)
+            return await self.get_temperature()
+        self.error_count = 0
         return new_temperature
 
     async def temperature(self):
@@ -168,8 +175,6 @@ class System(BaseModel):
             "boost",
             "program",
             "_temperature",
-            "error_count",
-            "disabled",
         }:
             try:
                 loop = asyncio.get_running_loop()
@@ -246,7 +251,6 @@ class System(BaseModel):
                     periods=[Period(**p) for p in system["periods"]],
                     advance=system.get("advance"),
                     boost=system.get("boost"),
-                    error_count=system["error_count"],
                     expiry_seconds=system.get("expiry_seconds", 20),
                 )
 
@@ -256,6 +260,8 @@ class System(BaseModel):
                 if temperature and temperature_expiry:
                     system_obj._temperature = temperature
                     system_obj.temperature_expiry = temperature_expiry
+
+                system_obj._initialized = True
 
                 yield system_obj
 
