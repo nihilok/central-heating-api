@@ -197,7 +197,7 @@ class System(BaseModel):
                 "periods": [p.model_dump() for p in self.periods],
                 "advance": self.advance,
                 "boost": self.boost,
-                "temperature": await self._temperature,
+                "temperature": self._temperature,
                 "temperature_expiry": self.temperature_expiry,
                 "disabled": self.disabled,
                 "error_count": self.error_count,
