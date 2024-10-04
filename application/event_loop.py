@@ -67,9 +67,11 @@ async def run_check(system: System) -> bool:
 
 
 async def heating_task():
+    last_system = None
     async for system in System.deserialize_systems():
         if not system:
             continue
+        last_system = system
 
         try:
             result = await run_check(system)
@@ -81,6 +83,9 @@ async def heating_task():
             await system.switch_on()
         else:
             await system.switch_off()
+
+    if last_system is None:
+        raise ValueError("All systems are disabled / no systems found")
 
 
 @log_exceptions("event_loop.graceful_shutdown")

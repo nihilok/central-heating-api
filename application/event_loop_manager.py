@@ -1,4 +1,5 @@
 import asyncio
+import os
 import signal
 from typing import Callable
 
@@ -38,6 +39,8 @@ class EventLoopManager:
             except Exception as e2:
                 logger.error(f"Cleanup on error failed: {e2}", exc_info=True)
             if not self._auto_restart or self.retries >= self.max_retries:
+                self.stop()
+                os.system("sudo reboot")
                 raise e1
             self.retries += 1
             if self._should_run:
