@@ -1,6 +1,7 @@
 import asyncio
 import os
 import signal
+import time
 from typing import Callable
 
 from application.logs import get_logger
@@ -9,13 +10,17 @@ logger = get_logger("event_loop_manager")
 
 
 class EventLoopManager:
+
+    WAIT_BEFORE_RETRY_SECS = 10
+    WAIT_BEFORE_REBOOT_SECS = 300
+
     def __init__(
         self,
         event_loop_coroutine: Callable,
         cleanup_function: Callable,
         use_signals: bool = False,
         auto_restart: bool = True,
-        max_retries: int = 3,
+        max_retries: int = 5,
     ):
         self._event_loop_coroutine = event_loop_coroutine
         self._cleanup_function = cleanup_function
@@ -40,13 +45,18 @@ class EventLoopManager:
                 logger.error(f"Cleanup on error failed: {e2}", exc_info=True)
             if not self._auto_restart or self.retries >= self.max_retries:
                 self.stop()
+                logger.warning(
+                    f"Rebooting system in {self.WAIT_BEFORE_REBOOT_SECS / 60} minutes"
+                )
+                time.sleep(self.WAIT_BEFORE_REBOOT_SECS)
                 os.system("sudo reboot")
                 raise e1
             self.retries += 1
             if self._should_run:
                 logger.warning(
-                    f"Attempting to restart task ({self.retries} of {self.max_retries} times)..."
+                    f"Attempting to restart task ({self.retries} of {self.max_retries} times). Waiting {self.WAIT_BEFORE_RETRY_SECS} seconds before restart..."
                 )
+                time.sleep(self.WAIT_BEFORE_RETRY_SECS)
                 return await self.event_loop(interval)
 
     def stop(self):
