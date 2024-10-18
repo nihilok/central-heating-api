@@ -48,7 +48,7 @@ class EventLoopManager:
                 logger.warning(
                     f"Rebooting system in {self.WAIT_BEFORE_REBOOT_SECS / 60} minutes"
                 )
-                time.sleep(self.WAIT_BEFORE_REBOOT_SECS)
+                await asyncio.sleep(self.WAIT_BEFORE_REBOOT_SECS)
                 os.system("sudo reboot")
                 raise e1
             self.retries += 1
@@ -56,7 +56,7 @@ class EventLoopManager:
                 logger.warning(
                     f"Attempting to restart task ({self.retries} of {self.max_retries} times). Waiting {self.WAIT_BEFORE_RETRY_SECS} seconds before restart..."
                 )
-                time.sleep(self.WAIT_BEFORE_RETRY_SECS)
+                await asyncio.sleep(self.WAIT_BEFORE_RETRY_SECS)
                 return await self.event_loop(interval)
 
     def stop(self):

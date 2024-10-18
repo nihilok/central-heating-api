@@ -5,10 +5,10 @@ import time
 from datetime import datetime, timedelta
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Union, Optional, AsyncIterable
+from typing import Union, Optional, AsyncIterable, Any
 
 import aiofiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError, ConfigDict
 
 from application.constants import DEFAULT_MINIMUM_TARGET
 from application.logs import get_logger, log_exceptions
@@ -25,6 +25,8 @@ file_semaphore = asyncio.Semaphore(1)
 
 
 class System(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     sensor: SensorNode
     relay: RelayNode
     system_id: Union[int, str]
@@ -34,6 +36,7 @@ class System(BaseModel):
     boost: Optional[float] = None
     disabled: bool = False
     error_count: int = 0
+    disabled_time: Optional[datetime] = None
     max_error_count: int = 5
     temperature_expiry: Optional[float] = None
     expiry_seconds: int = 20
@@ -43,6 +46,14 @@ class System(BaseModel):
         self._temperature = None
         self._initialized = False
         self._updating = False
+
+    def model_dump(
+        self,
+        **kwargs,
+    ) -> dict[str, Any]:
+        dump = super().model_dump(**kwargs)
+        dump["temperature"] = self._temperature
+        return dump
 
     async def get_temperature(self):
         logger.debug(
@@ -56,6 +67,7 @@ class System(BaseModel):
                     f"Disabling system {self.system_id} after {self.error_count} errors getting temperature"
                 )
                 self.disabled = True
+                self.disabled_time = datetime.now()
                 await self.attribute_changed()
                 return None
             await asyncio.sleep(5)
@@ -187,23 +199,7 @@ class System(BaseModel):
         logger.debug(f"Acquiring semaphore {self.system_id}")
         async with file_semaphore:
             logger.debug(f"Writing to file {self.system_id}")
-            sensor_dict = self.sensor.model_dump(exclude_unset=True)
-            relay_dict = self.relay.model_dump(exclude_unset=True)
-            serialised_data = {
-                "relay": relay_dict,
-                "sensor": sensor_dict,
-                "system_id": self.system_id,
-                "program": self.program,
-                "periods": [p.model_dump() for p in self.periods],
-                "advance": self.advance,
-                "boost": self.boost,
-                "temperature": self._temperature,
-                "temperature_expiry": self.temperature_expiry,
-                "disabled": self.disabled,
-                "error_count": self.error_count,
-                "expiry_seconds": self.expiry_seconds,
-            }
-
+            serialised_data = self.model_dump(exclude_unset=True)
             try:
                 async with aiofiles.open(PERSISTENCE_FILE, mode="r") as f:
                     content = await f.read()
@@ -237,37 +233,28 @@ class System(BaseModel):
                 logger.error(e)
                 raise StopAsyncIteration from e
         for system in conf["systems"]:
-            if system.get("disabled", False):
-                logger.debug(f"System: {system['system_id']} is disabled")
-                continue
             try:
-                relay = RelayNode(**system["relay"])
-                sensor = SensorNode(**system["sensor"])
-                system_obj = cls(
-                    relay=relay,
-                    sensor=sensor,
-                    system_id=system["system_id"],
-                    program=system["program"],
-                    periods=[Period(**p) for p in system["periods"]],
-                    advance=system.get("advance"),
-                    boost=system.get("boost"),
-                    expiry_seconds=system.get("expiry_seconds", 20),
-                )
+                system_obj = cls(**system)
 
-                temperature_expiry = system.get("expiry_seconds", 20)
+                if (
+                    system_obj.disabled
+                    and system_obj.disabled_time is not None
+                    and system_obj.disabled_time + timedelta(minutes=15)
+                    > datetime.now()
+                ):
+                    logger.warning(f"System {system_obj.system_id} is disabled")
+                    continue
+                elif system_obj.disabled:
+                    system_obj.disabled = False
+                    system_obj.disabled_time = None
+
                 temperature = system.get("temperature")
-
-                if temperature and temperature_expiry:
-                    system_obj._temperature = temperature
-                    system_obj.temperature_expiry = temperature_expiry
-
+                system_obj._temperature = temperature
                 system_obj._initialized = True
-
                 yield system_obj
 
-            except Exception as e:
-                logger.error(e)
-                continue
+            except ValidationError as e:
+                logger.error(e, exc_info=True)
 
     @classmethod
     @log_exceptions("system")
