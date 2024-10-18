@@ -1,9 +1,9 @@
 from typing import Optional
 
-import time
 from pydantic import BaseModel, ConfigDict
 
 from application.logs import log_exceptions
+from lib.errors import CommunicationError
 from lib.funcs import fetch_json
 
 
@@ -17,7 +17,7 @@ class SensorNode(BaseModel):
         res = await fetch_json(self.url)
 
         if res is None:
-            return None
+            raise CommunicationError(f"Failed to get temperature from URL: {self.url}")
 
         temp = float(res["temperature"])
 

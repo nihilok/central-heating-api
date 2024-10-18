@@ -15,6 +15,7 @@ from application.logs import get_logger, log_exceptions
 from data.models.period import Period
 from data.models.relay import RelayNode
 from data.models.sensor import SensorNode
+from lib.errors import CommunicationError
 
 DEFAULT_ROOM_TEMP = 22
 PERSISTENCE_FILE = (
@@ -59,8 +60,9 @@ class System(BaseModel):
         logger.debug(
             f"Getting temperature for {self.system_id} from sensor ({self.error_count + 1} of {self.max_error_count} retries)"
         )
-        new_temperature = await self.sensor.temperature()
-        if new_temperature is None:
+        try:
+            new_temperature = await self.sensor.temperature()
+        except CommunicationError as e:
             self.error_count += 1
             if self.error_count >= self.max_error_count:
                 logger.warning(
@@ -69,7 +71,7 @@ class System(BaseModel):
                 self.disabled = True
                 self.disabled_time = datetime.now()
                 await self.attribute_changed()
-                return None
+                raise e
             await asyncio.sleep(5)
             return await self.get_temperature()
         self.error_count = 0

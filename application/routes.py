@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from application.event_loop import event_loop as heating_event_loop
 from authentication import get_current_user
+from lib.errors import CommunicationError
 
 router = APIRouter(prefix="/api/v3")
 logger = get_logger(__name__)
@@ -69,16 +70,22 @@ async def new_or_update_system(system_update: SystemUpdate):
 @router.get("/temperature/{system_id}/")
 async def temperature(system_id: Union[int, str]):
     system = await get_system_by_id_or_404(system_id)
-    return {"temperature": await system.temperature()}
+    try:
+        return {"temperature": await system.temperature()}
+    except CommunicationError as e:
+        raise HTTPException(502, detail=str(e))
 
 
 @router.get("/target/{system_id}/")
 async def target(system_id: Union[int, str]):
     system = await get_system_by_id_or_404(system_id)
-    return {
-        "current_target": system.current_target,
-        "relay_on": await system.relay_on(),
-    }
+    try:
+        return {
+            "current_target": system.current_target,
+            "relay_on": await system.relay_on(),
+        }
+    except CommunicationError as e:
+        raise HTTPException(502, detail=str(e))
 
 
 @router.post("/periods/{system_id}/", dependencies=[Depends(get_current_user)])
@@ -117,14 +124,17 @@ async def get_all_data():
     systems = System.deserialize_systems()
     data = []
     async for system in systems:
-        data.append(
-            {
-                "id": system.system_id,
-                "temperature": await system.temperature(),
-                "target": system.current_target,
-                "relay_on": await system.relay_on(),
-            }
-        )
+        try:
+            data.append(
+                {
+                    "id": system.system_id,
+                    "temperature": await system.temperature(),
+                    "target": system.current_target,
+                    "relay_on": await system.relay_on(),
+                }
+            )
+        except CommunicationError:
+            pass
     return {"systems": sorted(data, key=lambda x: x["id"], reverse=True)}
 
 
