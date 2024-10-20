@@ -28,6 +28,16 @@ logger = get_logger(__name__)
 file_semaphore = asyncio.Semaphore(1)
 
 
+class SystemConfig(BaseModel):
+    systems: list["System"] = []
+
+    @classmethod
+    async def load_config(cls):
+        async with aiofiles.open(PERSISTENCE_FILE, mode="r") as f:
+            conf = json.loads(await f.read())
+            return cls(systems=conf["systems"])
+
+
 class System(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -204,26 +214,24 @@ class System(BaseModel):
         logger.debug(f"Acquiring semaphore {self.system_id}")
         async with file_semaphore:
             logger.debug(f"Writing to file {self.system_id}")
-            serialised_data = self.model_dump(exclude_unset=True)
             try:
-                async with aiofiles.open(PERSISTENCE_FILE, mode="r") as f:
-                    content = await f.read()
-                    current = json.loads(content)
+                current = await SystemConfig.load_config()
             except (FileNotFoundError, JSONDecodeError):
-                current = {"systems": []}
+                current = SystemConfig()
 
             updated_systems = list(
-                filter(lambda x: x["system_id"] != self.system_id, current["systems"])
+                filter(lambda x: x.system_id != self.system_id, current.systems)
             )
 
-            updated_systems.append(serialised_data)
+            updated_systems.append(self)
 
-            current["systems"] = [
-                self.__class__(**sys).model_dump() for sys in updated_systems
+            current.systems = [
+                sys.model_dump(exclude_unset=True) for sys in updated_systems
             ]
 
             async with aiofiles.open(PERSISTENCE_FILE, "w") as f:
-                await f.write(json.dumps(current, indent=2))
+                await f.write(current.model_dump_json(indent=2))
+
             logger.debug(f"Releasing semaphore {self.system_id}")
 
     @classmethod
