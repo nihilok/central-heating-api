@@ -24,7 +24,10 @@ class RelayNode(BaseModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.URLS = {"on": f"{self.URLS['on']}", "off": f"{self.URLS['off']}"}
+        try:
+            self.URLS = {"on": f"{self.URLS[True]}", "off": f"{self.URLS[False]}"}
+        except KeyError:
+            pass
 
     @log_exceptions("models.RelayNode")
     async def hit_switch(self, url):
