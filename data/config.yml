@@ -25,8 +25,6 @@ systems:
   sensor:
     url: http://192.168.1.37
   relay:
-    url_on: http://192.168.1.1/off?pin=2
-    url_off: http://192.168.1.1/on?pin=2
     url_status: http://192.168.1.1/status?pin=2
     URLS:
       on: http://192.168.1.1/off?pin=2
