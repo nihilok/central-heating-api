@@ -20,7 +20,7 @@ class RelayNode(BaseModel):
     cached_value: Optional[bool] = None
     last_updated: float = 0
     expiry_time: int = 10
-    URLS: UrlsDict
+    URLS: dict
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
