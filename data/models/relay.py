@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, TypedDict
 
 from pydantic import BaseModel, ConfigDict
 
@@ -8,17 +8,22 @@ from lib.errors import CommunicationError
 from lib.funcs import fetch_text
 
 
+class UrlsDict(TypedDict):
+    on: str
+    off: str
+
+
 class RelayNode(BaseModel):
     model_config = ConfigDict(extra="ignore")
     url_status: str
     cached_value: Optional[bool] = None
     last_updated: float = 0
     expiry_time: int = 10
-    URLS: Optional[dict] = None
+    URLS: UrlsDict
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.URLS = {"on": f"{self.URLS[True]}", "off": f"{self.URLS[False]}"}
+        self.URLS = {"on": f"{self.URLS['on']}", "off": f"{self.URLS['off']}"}
 
     @log_exceptions("models.RelayNode")
     async def hit_switch(self, url):
