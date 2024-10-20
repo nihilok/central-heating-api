@@ -1,5 +1,6 @@
 import asyncio
 import json
+import yaml
 import os
 import time
 from datetime import datetime, timedelta
@@ -21,6 +22,8 @@ DEFAULT_ROOM_TEMP = 22
 PERSISTENCE_FILE = (
     Path(os.path.dirname(os.path.abspath(__file__))).parent / "persistence.json"
 )
+CONFIG_FILE = Path(os.path.dirname(os.path.abspath(__file__))).parent / "config.yml"
+
 logger = get_logger(__name__)
 file_semaphore = asyncio.Semaphore(1)
 
@@ -224,16 +227,23 @@ class System(BaseModel):
     @classmethod
     async def deserialize_systems(cls) -> AsyncIterable["System"]:
         async with file_semaphore:
+            conf = None
             try:
                 async with aiofiles.open(PERSISTENCE_FILE, "r") as f:
                     content = await f.read()
                     conf = json.loads(content)
             except FileNotFoundError as e:
-                raise StopAsyncIteration from e
+                pass
             except JSONDecodeError as e:
                 logger.error(content)
                 logger.error(e)
-                raise StopAsyncIteration from e
+                pass
+
+        if conf is None:
+            with open(CONFIG_FILE, "w") as f:
+                yml_string = f.read()
+                conf = yaml.safe_load(yml_string)
+
         for system in conf["systems"]:
             try:
                 system_obj = cls(**system)

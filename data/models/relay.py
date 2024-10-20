@@ -10,8 +10,6 @@ from lib.funcs import fetch_text
 
 class RelayNode(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    url_on: str
-    url_off: str
     url_status: str
     cached_value: Optional[bool] = None
     last_updated: float = 0
@@ -20,7 +18,7 @@ class RelayNode(BaseModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.URLS = {"on": f"{self.url_on}", "off": f"{self.url_off}"}
+        self.URLS = {"on": f"{self.URLS['on']}", "off": f"{self.URLS['off']}"}
 
     @log_exceptions("models.RelayNode")
     async def hit_switch(self, url):

@@ -1,0 +1,59 @@
+systems:
+- system_id: downstairs
+  sensor:
+    url: http://192.168.1.45
+  relay:
+    url_status: http://192.168.1.1/status?pin=1
+    URLS:
+      on: http://192.168.1.1/off?pin=1
+      off: http://192.168.1.1/on?pin=1
+  program: true
+  periods:
+  - start: 22.0
+    end: 23.9833
+    target: 20.0
+    days:
+      monday: true
+      tuesday: true
+      wednesday: true
+      thursday: true
+      friday: true
+      saturday: true
+      sunday: true
+    id: 249fa841-ce4e-4b92-96d1-bdbb8ce2f347
+- system_id: upstairs
+  sensor:
+    url: http://192.168.1.37
+  relay:
+    url_on: http://192.168.1.1/off?pin=2
+    url_off: http://192.168.1.1/on?pin=2
+    url_status: http://192.168.1.1/status?pin=2
+    URLS:
+      on: http://192.168.1.1/off?pin=2
+      off: http://192.168.1.1/on?pin=2
+  program: true
+  periods:
+  - start: 6.0
+    end: 7.4
+    target: 21.0
+    days:
+      monday: true
+      tuesday: false
+      wednesday: false
+      thursday: false
+      friday: true
+      saturday: true
+      sunday: true
+    id: 70f2fc9b-ebc3-400e-a8d9-e92129086835
+  - start: 18.0
+    end: 21.0
+    target: 21.0
+    days:
+      monday: true
+      tuesday: true
+      wednesday: true
+      thursday: true
+      friday: true
+      saturday: true
+      sunday: true
+    id: 2fd5425e-809e-4ff5-b3bb-a11a87407cac
