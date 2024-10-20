@@ -208,9 +208,9 @@ class System(BaseModel):
             try:
                 async with aiofiles.open(PERSISTENCE_FILE, mode="r") as f:
                     content = await f.read()
-                    json.loads(content)
+                    current = json.loads(content)
             except (FileNotFoundError, JSONDecodeError):
-                {"systems": []}
+                current = {"systems": []}
 
             updated_systems = list(
                 filter(lambda x: x["system_id"] != self.system_id, current["systems"])
