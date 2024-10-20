@@ -246,6 +246,10 @@ class System(BaseModel):
                 conf = yaml.safe_load(yml_string)
                 logger.debug(conf)
 
+            reserialise = True
+        else:
+            reserialise = False
+
         if conf is None:
             raise StopAsyncIteration
 
@@ -268,6 +272,10 @@ class System(BaseModel):
                 temperature = system.get("temperature")
                 system_obj._temperature = temperature
                 system_obj._initialized = True
+
+                if reserialise:
+                    await system_obj.serialize()
+
                 yield system_obj
 
             except ValidationError as e:
