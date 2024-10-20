@@ -256,9 +256,9 @@ class System(BaseModel):
                 conf = yaml.safe_load(yml_string)
                 logger.debug(conf)
 
-            reserialise = True
-        else:
-            reserialise = False
+            config = SystemConfig(**conf)
+            for system in config.systems:
+                await system.serialize()
 
         if conf is None:
             raise StopAsyncIteration
@@ -279,12 +279,8 @@ class System(BaseModel):
                     system_obj.disabled = False
                     system_obj.disabled_time = None
 
-                temperature = system.get("temperature")
-                system_obj._temperature = temperature
+                system_obj._temperature = system.get("temperature")
                 system_obj._initialized = True
-
-                if reserialise:
-                    await system_obj.serialize()
 
                 yield system_obj
 
