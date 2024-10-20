@@ -240,9 +240,14 @@ class System(BaseModel):
                 pass
 
         if conf is None:
-            with open(CONFIG_FILE, "w") as f:
+            with open(CONFIG_FILE, "r") as f:
                 yml_string = f.read()
+                logger.debug(yml_string)
                 conf = yaml.safe_load(yml_string)
+                logger.debug(conf)
+
+        if conf is None:
+            raise StopAsyncIteration
 
         for system in conf["systems"]:
             try:
