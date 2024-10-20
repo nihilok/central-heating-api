@@ -1,5 +1,6 @@
 import time
-from typing import Optional, TypedDict
+from typing import Optional
+from typing_extensions import TypedDict
 
 from pydantic import BaseModel, ConfigDict
 
