@@ -218,7 +218,9 @@ class System(BaseModel):
 
             updated_systems.append(serialised_data)
 
-            current["systems"] = [sys.model_dump() for sys in updated_systems]
+            current["systems"] = [
+                self.__class__(**sys).model_dump() for sys in updated_systems
+            ]
 
             async with aiofiles.open(PERSISTENCE_FILE, "w") as f:
                 await f.write(json.dumps(current, indent=2))
