@@ -208,9 +208,9 @@ class System(BaseModel):
             try:
                 async with aiofiles.open(PERSISTENCE_FILE, mode="r") as f:
                     content = await f.read()
-                    current = json.loads(content)
+                    json.loads(content)
             except (FileNotFoundError, JSONDecodeError):
-                current = {"systems": []}
+                {"systems": []}
 
             updated_systems = list(
                 filter(lambda x: x["system_id"] != self.system_id, current["systems"])
@@ -218,7 +218,7 @@ class System(BaseModel):
 
             updated_systems.append(serialised_data)
 
-            current["systems"] = updated_systems
+            current["systems"] = [sys.model_dump() for sys in updated_systems]
 
             async with aiofiles.open(PERSISTENCE_FILE, "w") as f:
                 await f.write(json.dumps(current, indent=2))
