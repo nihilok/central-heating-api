@@ -57,9 +57,6 @@ async def run_check(system: System) -> bool:
     elif system.boost and system.boost <= current_time:
         system.boost = None
 
-    if not system.program:
-        return should_switch_on
-
     if relay_state:
         if temperature >= target:
             return should_switch_on
