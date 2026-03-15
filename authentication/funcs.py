@@ -28,13 +28,15 @@ def verify_password(password, hash):
 
 async def replace(model, values: dict, db_path=USER_DB):
     table = model.__table__
-    values = values.items()
+    columns = list(values.keys())
+    placeholders = ", ".join("?" for _ in columns)
     stmt = f"""
-    REPLACE INTO {table} ({', '.join((v[0] for v in values))})
-    VALUES ({', '.join(("'" + v[1] + "'" for v in values))});
+    REPLACE INTO {table} ({", ".join(columns)})
+    VALUES ({placeholders});
     """
+    parameters = tuple(values[column] for column in columns)
     async with aiosqlite.connect(db_path) as db:
-        await db.execute(stmt)
+        await db.execute(stmt, parameters)
         await db.commit()
 
 

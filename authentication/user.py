@@ -27,7 +27,7 @@ class User(BaseModel):
     async def get(cls, username):
         async with aiosqlite.connect(USER_DB) as db:
             async with db.execute(
-                f"SELECT * FROM users WHERE username = '{username}'"
+                "SELECT * FROM users WHERE username = ?", (username,)
             ) as cursor:
                 from_db = await cursor.fetchone()
                 if from_db is None:
@@ -54,12 +54,9 @@ class User(BaseModel):
     @classmethod
     async def authenticate_user(cls, username: str, password: str) -> Optional["User"]:
         user = await cls.get(username=username)
-        try:
-            if not _verify(password, user.password):
-                raise credentials_exception
-            return user
-        except Exception:
+        if user is None or not _verify(password, user.password):
             raise credentials_exception
+        return user
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
