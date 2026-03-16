@@ -49,7 +49,7 @@ async def get_systems() -> list[SystemOut]:
     ]
 
 
-@router.get("/systems/{system_id}/}")
+@router.get("/systems/{system_id}/")
 async def get_system(system_id: Optional[str] = None) -> SystemOut:
     system = await get_system_by_id_or_404(system_id)
     return SystemOut(
