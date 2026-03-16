@@ -1,4 +1,3 @@
-import time
 from datetime import timedelta, datetime
 
 import aiosqlite
@@ -51,9 +50,8 @@ def create_access_token(data: dict):
 
 def decode_jwt(token: str) -> dict:
     try:
-        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return decoded_token if decoded_token["expires"] >= time.time() else None
-    except Exception:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
         return {"message": "token expired, please log in again"}
 
 
