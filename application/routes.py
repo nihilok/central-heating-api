@@ -109,7 +109,7 @@ async def boost(system_id: Union[int, str], body: AdvanceBody):
     return SystemOut(**system.dict(exclude_unset=True))
 
 
-@router.post("/cancel_all/{system_id}/")
+@router.post("/cancel_all/{system_id}/", dependencies=[Depends(get_current_user)])
 async def cancel(system_id: Union[int, str]):
     system = await get_system_by_id_or_404(system_id)
     if system.boost:
