@@ -17,6 +17,10 @@ export HEATING_API_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token
 ```sh
 export HEATING_API_CORS_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
 ```
+- set sensor ingest token used by sensor nodes posting to `/api/v3/receive/{sensor_id}/`
+```sh
+export HEATING_API_SENSOR_INGEST_TOKEN="<set-a-random-token>"
+```
 - create a new systemd unit file (change the appropriate paths making sure the ExecStart command is using the python executable from inside your virtual environment)
 ```sh
 echo "[Unit]
@@ -27,6 +31,7 @@ User=<your user>
 WorkingDirectory=home/<your user>/project/directory
 Environment=HEATING_API_SECRET_KEY=<set-a-strong-secret-here>
 Environment=HEATING_API_CORS_ORIGINS=http://localhost:3000
+Environment=HEATING_API_SENSOR_INGEST_TOKEN=<set-a-random-token>
 ExecStart=/home/<your user>/venv/bin/python main.py
 Restart=always
 
@@ -46,6 +51,8 @@ sudo systemctl start central-heating
 There are two different micropython controllers in the current setup. A "relay" controller and a "sensor" controller. The code for these is stored in `./relay_node` and `./sensor_node` respectively and must be flashed to a suitable micropython wifi device. I've used a total of 3 NodeMCU ESP8266 controllers: 2 sensor nodes and 1 relay node.
 
 After adjusting the network settings (SSID & WPA key), all of the python modules in each directory must be flashed to the relevant microcontroller. I recommend using the Thonny IDE to connect to your micropython devices.
+
+For `sensor_node_transmitter`, set `SENSOR_INGEST_TOKEN` in `sensor_node_lib/constants.py` to the same value configured in `HEATING_API_SENSOR_INGEST_TOKEN` on the API.
 
 ### Configuration
 

@@ -33,7 +33,8 @@ def get_data() -> dict:
 
 
 def transmit_data(data: dict, url: str) -> urequests.Response:
-    return urequests.post(url, json=data)
+    headers = {"X-Sensor-Token": constants.SENSOR_INGEST_TOKEN}
+    return urequests.post(url, json=data, headers=headers)
 
 
 def main():

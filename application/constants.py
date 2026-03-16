@@ -21,3 +21,4 @@ def _parse_cors_origins() -> list[str]:
 
 
 CORS_ALLOWED_ORIGINS = _parse_cors_origins()
+SENSOR_INGEST_TOKEN = (os.getenv("HEATING_API_SENSOR_INGEST_TOKEN") or "").strip() or None

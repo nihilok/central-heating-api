@@ -4,11 +4,15 @@ from typing import Optional, Union
 
 from pydantic import ValidationError
 
-from application.constants import DEFAULT_MINIMUM_TARGET, CHECK_FREQUENCY_SECONDS
+from application.constants import (
+    DEFAULT_MINIMUM_TARGET,
+    CHECK_FREQUENCY_SECONDS,
+    SENSOR_INGEST_TOKEN,
+)
 from application.models import SystemUpdate, PeriodsBody, SystemOut, AdvanceBody
 from application.logs import get_logger
 from data.models.system import System
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 
 from application.event_loop import event_loop as heating_event_loop
 from authentication import get_current_user
@@ -23,6 +27,15 @@ async def get_system_by_id_or_404(system_id) -> System:
     if not system:
         raise HTTPException(404, "System not found")
     return system
+
+
+async def verify_sensor_ingest_token(
+    x_sensor_token: Optional[str] = Header(default=None),
+):
+    if SENSOR_INGEST_TOKEN is None:
+        raise HTTPException(503, "Sensor ingest token is not configured")
+    if x_sensor_token != SENSOR_INGEST_TOKEN:
+        raise HTTPException(401, "Could not validate sensor token")
 
 
 @router.get("/systems/")
@@ -165,7 +178,7 @@ async def reboot():
     return {}
 
 
-@router.post("/receive/{sensor_id}/")
+@router.post("/receive/{sensor_id}/", dependencies=[Depends(verify_sensor_ingest_token)])
 async def receive(sensor_id: str, data: dict):
     system = await get_system_by_id_or_404(sensor_id)
     t = data.get("temperature")
