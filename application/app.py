@@ -3,7 +3,6 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
 from application.constants import (
@@ -41,20 +40,5 @@ if RUN_EVENT_LOOP_ON_STARTUP:
         await heating_event_loop.stop_and_cleanup()
 
 
-async def static_response(filename, media_type="text/html"):
-    file = STATIC_FILES_PATH / filename
-    with open(file, "rb") as f:
-        return Response(content=f.read(), media_type=media_type)
-
-
 app.mount("/static", StaticFiles(directory=STATIC_FILES_PATH), name="static")
-
-
-@app.get("/")
-async def index_html():
-    return await static_response("index.html")
-
-
-@app.get("/assets/flame-b2dd84ec.png")
-async def flame_icon():
-    return await static_response("assets/flame-b2dd84ec.png", "image/png")
+app.mount("/", StaticFiles(directory=STATIC_FILES_PATH, html=True), name="frontend")
