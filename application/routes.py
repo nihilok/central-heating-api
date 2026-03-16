@@ -7,7 +7,13 @@ from application.constants import (
     CHECK_FREQUENCY_SECONDS,
     SENSOR_INGEST_TOKEN,
 )
-from application.models import SystemUpdate, PeriodsBody, SystemOut, AdvanceBody
+from application.models import (
+    SystemUpdate,
+    PeriodsBody,
+    SystemOut,
+    AdvanceBody,
+    SensorReceiveBody,
+)
 from application.logs import get_logger
 from data.models.system import System
 from fastapi import APIRouter, HTTPException, Depends, Header
@@ -176,12 +182,7 @@ async def reboot():
 
 
 @router.post("/receive/{sensor_id}/", dependencies=[Depends(verify_sensor_ingest_token)])
-async def receive(sensor_id: str, data: dict):
+async def receive(sensor_id: str, data: SensorReceiveBody):
     system = await get_system_by_id_or_404(sensor_id)
-    t = data.get("temperature")
-    if t is None:
-        return {}
-    if isinstance(t, str):
-        t = float(t)
-    await system.set_temperature(t)
+    await system.set_temperature(data.temperature)
     return {}

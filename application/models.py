@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Union, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from data.models.period import Period
 from data.models.relay import RelayNode
@@ -22,6 +22,11 @@ class PeriodsBody(BaseModel):
 
 class AdvanceBody(BaseModel):
     end_time: float
+
+
+class SensorReceiveBody(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    temperature: float
 
 
 class SystemOut(BaseModel):
