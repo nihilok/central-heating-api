@@ -1,0 +1,3 @@
+[submodule "heating-ui"]
+	path = heating-ui
+	url = git@github.com:nihilok/heating-ui.git

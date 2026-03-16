@@ -46,6 +46,20 @@ sudo systemctl enable central-heating
 sudo systemctl start central-heating
 ```
 
+### Sync bundled frontend
+
+To rebuild the `heating-ui` submodule and replace the minified assets served by the API:
+
+```sh
+./scripts/sync-front-end.sh
+```
+
+This script fails fast if the `heating-ui` submodule is unavailable/uninitialized. If needed:
+
+```sh
+git submodule update --init --recursive heating-ui
+```
+
 ### Installation (micropython devices)
 
 There are two different micropython controllers in the current setup. A "relay" controller and a "sensor" controller. The code for these is stored in `./relay_node` and `./sensor_node` respectively and must be flashed to a suitable micropython wifi device. I've used a total of 3 NodeMCU ESP8266 controllers: 2 sensor nodes and 1 relay node.
