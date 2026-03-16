@@ -1,5 +1,3 @@
-import os
-
 from typing import Optional, Union
 
 from pydantic import ValidationError
@@ -174,8 +172,7 @@ async def stop():
 
 @router.post("/reboot_system/", dependencies=[Depends(get_current_user)])
 async def reboot():
-    os.system("sudo reboot")
-    return {}
+    raise HTTPException(410, detail="API-triggered reboot is disabled")
 
 
 @router.post("/receive/{sensor_id}/", dependencies=[Depends(verify_sensor_ingest_token)])
