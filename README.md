@@ -13,6 +13,10 @@ pip install -r requirements.txt
 ```sh
 export HEATING_API_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
 ```
+- set trusted CORS origins (comma-separated, no wildcard)
+```sh
+export HEATING_API_CORS_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
+```
 - create a new systemd unit file (change the appropriate paths making sure the ExecStart command is using the python executable from inside your virtual environment)
 ```sh
 echo "[Unit]
@@ -22,6 +26,7 @@ Description=Open Central Heating API
 User=<your user>
 WorkingDirectory=home/<your user>/project/directory
 Environment=HEATING_API_SECRET_KEY=<set-a-strong-secret-here>
+Environment=HEATING_API_CORS_ORIGINS=http://localhost:3000
 ExecStart=/home/<your user>/venv/bin/python main.py
 Restart=always
 

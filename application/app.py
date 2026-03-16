@@ -6,7 +6,11 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
-from application.constants import RUN_EVENT_LOOP_ON_STARTUP, CHECK_FREQUENCY_SECONDS
+from application.constants import (
+    RUN_EVENT_LOOP_ON_STARTUP,
+    CHECK_FREQUENCY_SECONDS,
+    CORS_ALLOWED_ORIGINS,
+)
 from application.event_loop import event_loop as heating_event_loop
 from application.routes import router as api_router
 from authentication.routes import router as auth_router
@@ -18,10 +22,10 @@ app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 STATIC_FILES_PATH = Path(os.path.dirname(os.path.abspath(__file__))) / "front-end"
