@@ -9,6 +9,10 @@
 python3 -m venv venv
 pip install -r requirements.txt
 ```
+- set a JWT secret key for authentication tokens (this invalidates previously issued tokens when rotated)
+```sh
+export HEATING_API_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+```
 - create a new systemd unit file (change the appropriate paths making sure the ExecStart command is using the python executable from inside your virtual environment)
 ```sh
 echo "[Unit]
@@ -17,6 +21,7 @@ Description=Open Central Heating API
 [Service]
 User=<your user>
 WorkingDirectory=home/<your user>/project/directory
+Environment=HEATING_API_SECRET_KEY=<set-a-strong-secret-here>
 ExecStart=/home/<your user>/venv/bin/python main.py
 Restart=always
 
